@@ -13,19 +13,16 @@
       <div class="app-subtitle" id="subtitle">Lokalnie • bez konta</div>
     </div>
     <div class="topbar__right">
-      <button class="btn btn--ghost" id="btnExport" title="Eksport danych">Eksport</button>
-      <label class="btn btn--ghost file-btn" title="Import danych">
-        Import
-        <input type="file" id="fileImport" accept="application/json" hidden />
-      </label>
       <button class="btn" id="btnAdd">+ Dodaj cel</button>
+      <button class="icon-btn" id="btnSettings" aria-label="Ustawienia wyglądu">⚙</button>
     </div>
   </header>
 
   <main class="layout">
+    
     <section class="panel">
       <div class="panel__header">
-        <h2>Podsumowanie dnia</h2>
+        <h2>Data</h2>
         <div class="date-row">
           <button class="icon-btn" id="btnPrevDay" aria-label="Poprzedni dzień">◀</button>
           <input type="date" id="datePicker" />
@@ -33,27 +30,7 @@
           <button class="btn btn--ghost" id="btnToday">Dzisiaj</button>
         </div>
       </div>
-
-      <div class="summary-grid">
-        <div class="card">
-          <div class="card__label">Daily wykonane</div>
-          <div class="card__value" id="dailyDone">0</div>
-        </div>
-        <div class="card">
-          <div class="card__label">Daily razem</div>
-          <div class="card__value" id="dailyTotal">0</div>
-        </div>
-        <div class="card">
-          <div class="card__label">% dnia</div>
-          <div class="card__value" id="dailyPct">0%</div>
-        </div>
-        <div class="card">
-          <div class="card__label">% ogólnie (rok)</div>
-          <div class="card__value" id="overallPct">0%</div>
-        </div>
-      </div>
     </section>
-
 <section class="panel">
   <div class="panel__header">
     <h2>Widok</h2>
@@ -62,6 +39,8 @@
       <button class="chip" data-view="goals" id="tabGoals">Cele</button>
       <button class="chip" data-view="tasks" id="tabTasks">Taski</button>
       <button class="chip" data-view="calendar" id="tabCalendar">Kalendarz</button>
+      <button class="chip" data-view="gym" id="tabGym">Siłownia</button>
+      <button class="chip" data-view="diet" id="tabDiet">Dieta</button>
     </div>
   </div>
 
@@ -115,6 +94,95 @@
     <div class="calendar-legend">
       <div class="calendar-hint">Kliknij dzień, aby przejść do tej daty (Dzisiaj).</div>
       <div id="calendarDayDetails" class="calendar-details"></div>
+    </div>
+  </div>
+
+
+
+  <!-- Widok: SIŁOWNIA -->
+  <div id="gymView" style="display:none;">
+    <div class="gym-header">
+      <button class="icon-btn" id="gymPrevWeek" aria-label="Poprzedni tydzień">◀</button>
+      <div class="gym-title" id="gymWeekTitle">Tydzień</div>
+
+    <div class="gym-workouts">
+      <button class="chip chip--active" id="gymWorkoutA" data-workout="A" type="button">Trening A</button>
+      <button class="chip" id="gymWorkoutB" data-workout="B" type="button">Trening B</button>
+      <button class="chip" id="gymWorkoutC" data-workout="C" type="button">Trening C</button>
+    </div>
+      <button class="icon-btn" id="gymNextWeek" aria-label="Następny tydzień">▶</button>
+      <button class="btn btn--ghost" id="gymThisWeek">Ten tydzień</button>
+    </div>
+
+    <div class="today-hint">Wpisuj tygodniowo: serie i ciężar. Dane zapisują się lokalnie na tym urządzeniu.</div>
+    <div id="gymList" class="gym-list"></div>
+  </div>
+
+
+  <!-- Widok: DIETA -->
+  <div id="dietView" style="display:none;">
+    <div class="diet-header">
+      <button class="icon-btn" id="dietPrevWeek" aria-label="Poprzedni tydzień">◀</button>
+      <div class="diet-title" id="dietWeekTitle">Tydzień</div>
+      <button class="icon-btn" id="dietNextWeek" aria-label="Następny tydzień">▶</button>
+      <button class="btn btn--ghost" id="dietThisWeek">Ten tydzień</button>
+    </div>
+
+    <div class="today-hint">Ustaw cele dzienne i wpisuj spożycie dla wybranej daty. Podsumowanie tygodniowe liczy się automatycznie.</div>
+
+
+    <!-- 1) SPOŻYCIE (na górze) -->
+    <div class="diet-card">
+      <div class="diet-card__title">Spożycie — <span id="dietDateLabel">dzień</span></div>
+      <div class="diet-form">
+        <div class="diet-field">
+          <label>Kcal</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInKcal" placeholder="np. 2250" />
+        </div>
+        <div class="diet-field">
+          <label>Białko (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInP" placeholder="np. 170" />
+        </div>
+        <div class="diet-field">
+          <label>Węgle (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInC" placeholder="np. 220" />
+        </div>
+        <div class="diet-field">
+          <label>Tłuszcze (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInF" placeholder="np. 65" />
+        </div>
+      </div>
+      <div class="diet-mini" id="dietMiniStatus"></div>
+    </div>
+
+    <!-- 2) PODSUMOWANIE TYGODNIOWE -->
+    <div class="diet-card" style="margin-top:12px;">
+      <div class="diet-card__title">Podsumowanie tygodniowe</div>
+      <div id="dietWeekSummary" class="diet-summary"></div>
+      <div class="diet-note">Zasady liczenia: kcal/węgle/tłuszcze = „w normie”, jeśli ≤ celu. Białko = „w normie”, jeśli ≥ celu.</div>
+    </div>
+
+    <!-- 3) CELE DZIENNE (na dole) -->
+    <div class="diet-card" style="margin-top:12px;">
+      <div class="diet-card__title">Cele dzienne</div>
+      <div class="diet-form diet-form--targets">
+        <div class="diet-field">
+          <label>Kcal</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetKcal" placeholder="np. 2400" />
+        </div>
+        <div class="diet-field">
+          <label>Białko (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetP" placeholder="np. 180" />
+        </div>
+        <div class="diet-field">
+          <label>Węgle (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetC" placeholder="np. 250" />
+        </div>
+        <div class="diet-field">
+          <label>Tłuszcze (g)</label>
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetF" placeholder="np. 70" />
+        </div>
+      </div>
     </div>
   </div>
 
@@ -187,6 +255,178 @@
     </div>
   </div>
 
+
+  <!-- Modal: Add/Edit Exercise (Gym) -->
+  <div class="modal" id="gymModal" aria-hidden="true">
+    <div class="modal__backdrop" id="gymModalBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="gymModalTitle">
+      <div class="modal__header">
+        <h3 id="gymModalTitle">Dodaj ćwiczenie</h3>
+        <button class="icon-btn" id="btnCloseGymModal" aria-label="Zamknij">✕</button>
+      </div>
+
+      <form id="gymForm" class="form">
+        <div class="form-row">
+          <label>Nazwa ćwiczenia</label>
+          <input type="text" id="exName" maxlength="60" placeholder="np. Wyciskanie leżąc" required />
+        </div>
+
+        <div class="form-row">
+          <label>Plan (serie × powtórzenia)</label>
+          <input type="text" id="exScheme" maxlength="30" placeholder="np. 4×8" />
+          <small class="hint">To jest opis/szablon. W tygodniu wpisujesz realne serie i ciężar.</small>
+        </div>
+
+        <div class="form-row">
+          <label>Trening</label>
+          <select id="exWorkout">
+            <option value="A">Trening A</option>
+            <option value="B">Trening B</option>
+            <option value="C">Trening C</option>
+          </select>
+          <small class="hint">Ćwiczenie będzie widoczne tylko w wybranym treningu.</small>
+        </div>
+
+        <div class="form-row">
+          <label>Notatka (opcjonalnie)</label>
+          <textarea id="exNote" rows="3" maxlength="240" placeholder="np. przerwy 2–3 min, tempo 3-1-1"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnCancelGym">Anuluj</button>
+          <button type="submit" class="btn" id="btnSaveGym">Zapisz</button>
+        </div>
+
+        <input type="hidden" id="editingExId" />
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Modal: Gym Progress History -->
+  <div class="modal" id="gymHistoryModal" aria-hidden="true">
+    <div class="modal__backdrop" id="gymHistoryBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="gymHistoryTitle">
+      <div class="modal__header">
+        <h3 id="gymHistoryTitle">Historia progresu</h3>
+        <button class="icon-btn" id="btnCloseGymHistory" aria-label="Zamknij">✕</button>
+      </div>
+
+      <div class="gym-history">
+        <div class="gym-history__meta" id="gymHistoryMeta"></div>
+
+        <div class="gym-history__chart" id="gymHistoryChart"></div>
+
+        <div class="gym-history__table-wrap">
+          <table class="gym-history__table">
+            <thead>
+              <tr>
+                <th>Tydzień</th>
+                <th>Serie</th>
+                <th>Powt.</th>
+                <th>Ciężar (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="gymHistoryRows"></tbody>
+          </table>
+        </div>
+
+        <div class="gym-history__hint">Tip: kliknij w ćwiczenie, aby zobaczyć historię.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Settings (Appearance) -->
+  <div class="modal" id="settingsModal" aria-hidden="true">
+    <div class="modal__backdrop" id="settingsBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal__header">
+        <h3 id="settingsTitle">Ustawienia wyglądu</h3>
+        <button class="icon-btn" id="btnCloseSettings" aria-label="Zamknij">✕</button>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <label>Kolorystyka tła</label>
+          <div class="preset-row" id="gradientPresets">
+            <button type="button" class="preset-btn" data-preset="blue">
+              <span class="preset-dots">
+                <span class="preset-dot" style="background: rgb(37,99,235)"></span>
+                <span class="preset-dot" style="background: rgb(16,185,129)"></span>
+                <span class="preset-dot" style="background: rgb(99,102,241)"></span>
+              </span>
+              Blue
+            </button>
+
+            <button type="button" class="preset-btn" data-preset="purple">
+              <span class="preset-dots">
+                <span class="preset-dot" style="background: rgb(168,85,247)"></span>
+                <span class="preset-dot" style="background: rgb(99,102,241)"></span>
+                <span class="preset-dot" style="background: rgb(236,72,153)"></span>
+              </span>
+              Purple
+            </button>
+
+            <button type="button" class="preset-btn" data-preset="green">
+              <span class="preset-dots">
+                <span class="preset-dot" style="background: rgb(34,197,94)"></span>
+                <span class="preset-dot" style="background: rgb(16,185,129)"></span>
+                <span class="preset-dot" style="background: rgb(59,130,246)"></span>
+              </span>
+              Green
+            </button>
+
+            <button type="button" class="preset-btn" data-preset="red">
+              <span class="preset-dots">
+                <span class="preset-dot" style="background: rgb(239,68,68)"></span>
+                <span class="preset-dot" style="background: rgb(245,158,11)"></span>
+                <span class="preset-dot" style="background: rgb(59,130,246)"></span>
+              </span>
+              Red
+            </button>
+
+            <button type="button" class="preset-btn" data-preset="mono">
+              <span class="preset-dots">
+                <span class="preset-dot" style="background: rgb(148,163,184)"></span>
+                <span class="preset-dot" style="background: rgb(100,116,139)"></span>
+                <span class="preset-dot" style="background: rgb(71,85,105)"></span>
+              </span>
+              Mono
+            </button>
+          </div>
+          <small class="hint">Ustawienie zapisuje się lokalnie (na tym urządzeniu).</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnResetGradient">Reset</button>
+          <button type="button" class="btn" id="btnCloseSettings2">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  
+
+  <!-- Modal: UI (alerts / confirm) -->
+  <div class="modal" id="uiModal" aria-hidden="true">
+    <div class="modal__backdrop" id="uiBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="uiTitle">
+      <div class="modal__header">
+        <h3 id="uiTitle">Powiadomienie</h3>
+        <button class="icon-btn" id="uiClose" aria-label="Zamknij">✕</button>
+      </div>
+      <div class="ui-modal__message" id="uiMessage"></div>
+      <div class="form-actions" style="margin-top:12px;">
+        <button type="button" class="btn btn--ghost" id="uiCancel">Anuluj</button>
+        <button type="button" class="btn" id="uiOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+
+
   <script src="app.js"></script>
+
 </body>
 </html>

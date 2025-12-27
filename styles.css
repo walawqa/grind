@@ -10,6 +10,11 @@
   --danger:#ef4444;
   --shadow: 0 18px 50px rgba(0,0,0,.35);
   --radius:18px;
+
+  /* Background glow colors (RGB triplets) */
+  --g1: 37,99,235;
+  --g2: 16,185,129;
+  --g3: 99,102,241;
 }
 
 *{box-sizing:border-box}
@@ -21,9 +26,9 @@ body{
 
   /* Premium background: deep gradient + soft glows + subtle vignette */
   background:
-    radial-gradient(1200px 700px at 18% -10%, rgba(37,99,235,.38), transparent 60%),
-    radial-gradient(900px 560px at 92% 8%, rgba(16,185,129,.22), transparent 58%),
-    radial-gradient(700px 520px at 50% 110%, rgba(99,102,241,.18), transparent 60%),
+    radial-gradient(1200px 700px at 18% -10%, rgba(var(--g1),.38), transparent 60%),
+    radial-gradient(900px 560px at 92% 8%, rgba(var(--g2),.22), transparent 58%),
+    radial-gradient(700px 520px at 50% 110%, rgba(var(--g3),.18), transparent 60%),
     linear-gradient(180deg, #0b1220 0%, #070b16 55%, #050814 100%);
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -128,11 +133,7 @@ input[type="date"]{
 }
 .file-btn{position:relative; overflow:hidden}
 
-.summary-grid{
-  display:grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
-  gap:10px;
-}
+
 .card{
   background: rgba(255,255,255,.04);
   border:1px solid var(--line);
@@ -256,10 +257,15 @@ input[type="range"]{width:100%}
 .hint{color:var(--muted); font-size:12px}
 .form-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:6px}
 
-@media (max-width: 560px){
-  .summary-grid{grid-template-columns:1fr}
-  .topbar__right{gap:8px}
+@media (max-width: 560px){  .topbar__right{gap:8px}
+  .summary-line{
+  display: inline-flex;
+  align-items: center;
+font-size:16px; padding:10px 12px
+  max-width: none;
 }
+}
+
 .today-hint{
   color: var(--muted);
   font-size: 12px;
@@ -459,4 +465,304 @@ input[type="range"]{width:100%}
 }
 .cal-detail__name{
   font-weight: 900;
+}
+
+/* ===== Gym view ===== */
+.gym-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top: 6px;
+}
+.gym-title{
+  flex:1;
+  font-weight:900;
+  font-size: 16px;
+  text-align:center;
+}
+.gym-list{
+  display:grid;
+  gap: 10px;
+}
+.gym-row{
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  border-radius: 16px;
+  padding: 12px;
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  align-items:flex-start;
+}
+.gym-row__left{
+  min-width:0;
+}
+.gym-row__name{
+  font-weight: 1000;
+  margin: 0;
+  font-size: 14px;
+}
+.gym-row__scheme{
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.gym-row__right{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.gym-field{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  min-width: 110px;
+}
+.gym-field label{
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 900;
+}
+.gym-field input{
+  width: 110px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+}
+.gym-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+@media (max-width: 560px){
+  .gym-row{flex-direction:column; align-items:stretch;}
+  .gym-row__right{justify-content:flex-start;}
+  .gym-field input{width: 100%;}
+  .gym-field{min-width: 0;}
+}
+
+
+/* Gym: workout selector */
+.gym-workouts{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin: 8px 0 10px;
+}
+
+
+/* Gym history */
+.gym-history{display:flex; flex-direction:column; gap:12px}
+.gym-history__meta{
+  font-weight:900;
+  color: var(--muted);
+  font-size: 12px;
+}
+.gym-history__chart{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background: rgba(255,255,255,.03);
+  padding: 12px;
+}
+.gym-history__table-wrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background: rgba(255,255,255,.03);
+}
+.gym-history__table{
+  width:100%;
+  border-collapse: collapse;
+  min-width: 420px;
+}
+.gym-history__table th,
+.gym-history__table td{
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  font-size:12px;
+}
+.gym-history__table th{color: var(--muted); font-weight:900}
+.gym-history__table td{font-weight:800}
+.gym-history__hint{
+  color: var(--muted);
+  font-size: 12px;
+  opacity:.9;
+}
+.gym-row__name{cursor:pointer}
+.gym-row__name:hover{text-decoration: underline}
+@media (max-width:560px){
+  .gym-history__table{min-width: 360px;}
+}
+
+
+/* Gym reps fit */
+.gym-field{ min-width: 96px; }
+.gym-field input{ width: 96px; }
+@media (max-width: 560px){
+  .gym-field input{ width: 100%; }
+}
+
+
+/* ===== Diet view ===== */
+.diet-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top: 6px;
+}
+.diet-title{
+  flex:1;
+  font-weight:900;
+  font-size: 16px;
+  text-align:center;
+}
+.diet-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 720px){
+  .diet-grid{grid-template-columns: 1fr;}
+}
+.diet-card{
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  border-radius: 18px;
+  padding: 12px;
+}
+.diet-card__title{
+  font-weight: 1000;
+  margin-bottom: 10px;
+}
+.diet-form{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 420px){
+  .diet-form{grid-template-columns: 1fr;}
+}
+.diet-field{display:flex; flex-direction:column; gap:6px}
+.diet-field input{
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+}
+.diet-mini{margin-top: 10px}
+.diet-pills{display:flex; gap:8px; flex-wrap:wrap}
+.pill--ok{border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.12)}
+.pill--bad{border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.10); color:#ffd2d2}
+
+.diet-summary{display:grid; gap: 10px}
+.diet-summary-top{display:grid; gap:10px}
+.diet-sum-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+.diet-sum-label{font-weight:1000}
+.diet-sum-sub{color: var(--muted); font-size: 12px; margin-top: 2px}
+.diet-sum-num{font-weight: 1000; font-size: 20px; text-align:right}
+
+.diet-days-head{
+  display:grid;
+  grid-template-columns: 120px 1fr 46px;
+  gap:10px;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 12px;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+.diet-days{
+  display:grid;
+  gap: 8px;
+}
+.diet-day{
+  display:grid;
+  grid-template-columns: 120px 1fr 46px;
+  gap:10px;
+  align-items:center;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.diet-day--empty{opacity:.45}
+.diet-day__date{font-weight: 900; font-size: 12px}
+.diet-day__vals{font-weight: 900; font-size: 12px}
+.diet-day__tags{text-align:right; font-weight:1000}
+.diet-note{margin-top: 10px; color: var(--muted); font-size: 12px; opacity:.9}
+
+
+/* ===== Czytelność select / input przy rozwijaniu ===== */
+select:focus,
+input:focus,
+textarea:focus {
+  color: #0b1220;
+  background-color: #ffffff;
+}
+
+select option {
+  color: #0b1220;
+  background-color: #ffffff;
+}
+
+
+
+/* ===== Settings (appearance) ===== */
+.preset-row{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap:10px;
+}
+.preset-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:flex-start;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+  cursor:pointer;
+  font-weight:900;
+  font-size:12px;
+}
+.preset-btn:hover{ background: rgba(255,255,255,.08); }
+.preset-btn.is-active{
+  border-color: rgba(37,99,235,.55);
+  background: rgba(37,99,235,.16);
+}
+.preset-dots{ display:flex; gap:6px; }
+.preset-dot{
+  width:10px; height:10px;
+  border-radius:999px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.10);
+}
+
+
+
+/* ===== UI modal (custom alerts/confirm) ===== */
+#uiModal .modal__card{
+  margin: 18vh auto;
+}
+.ui-modal__message{
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.35;
+  padding: 6px 2px 2px;
+  white-space: pre-wrap;
 }
