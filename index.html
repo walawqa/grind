@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>WALAWKA GRIND</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <div class="app-title">WALAWKA GRIND</div>
+      <div class="app-subtitle" id="subtitle">Lokalnie • bez konta</div>
+    </div>
+    <div class="topbar__right">
+      <button class="btn btn--ghost" id="btnExport" title="Eksport danych">Eksport</button>
+      <label class="btn btn--ghost file-btn" title="Import danych">
+        Import
+        <input type="file" id="fileImport" accept="application/json" hidden />
+      </label>
+      <button class="btn" id="btnAdd">+ Dodaj cel</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Podsumowanie dnia</h2>
+        <div class="date-row">
+          <button class="icon-btn" id="btnPrevDay" aria-label="Poprzedni dzień">◀</button>
+          <input type="date" id="datePicker" />
+          <button class="icon-btn" id="btnNextDay" aria-label="Następny dzień">▶</button>
+          <button class="btn btn--ghost" id="btnToday">Dzisiaj</button>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="card">
+          <div class="card__label">Daily wykonane</div>
+          <div class="card__value" id="dailyDone">0</div>
+        </div>
+        <div class="card">
+          <div class="card__label">Daily razem</div>
+          <div class="card__value" id="dailyTotal">0</div>
+        </div>
+        <div class="card">
+          <div class="card__label">% dnia</div>
+          <div class="card__value" id="dailyPct">0%</div>
+        </div>
+        <div class="card">
+          <div class="card__label">% ogólnie (rok)</div>
+          <div class="card__value" id="overallPct">0%</div>
+        </div>
+      </div>
+    </section>
+
+<section class="panel">
+  <div class="panel__header">
+    <h2>Widok</h2>
+    <div class="filters">
+      <button class="chip chip--active" data-view="today" id="tabToday">Dzisiaj</button>
+      <button class="chip" data-view="goals" id="tabGoals">Cele</button>
+      <button class="chip" data-view="tasks" id="tabTasks">Taski</button>
+      <button class="chip" data-view="calendar" id="tabCalendar">Kalendarz</button>
+    </div>
+  </div>
+
+  <!-- Widok: DZISIAJ -->
+  <div id="todayView">
+    <div class="today-hint">Szybkie odhaczanie celów Daily dla wybranej daty.</div>
+    <div id="todayDailyList" class="today-list"></div>
+  
+
+    <div class="overview-title">Postęp celów (rok)</div>
+    <div id="overviewGrid" class="overview-grid"></div>
+
+    </div>
+
+  <!-- Widok: CELE -->
+<div id="goalsView" style="display:none;">
+  <div class="panel__header" style="margin-top:10px;">
+    <h2>Twoje cele</h2>
+    <div class="filters">
+      <button class="chip chip--active" data-filter="all" type="button">Wszystkie</button>
+      <button class="chip" data-filter="daily" type="button">Daily</button>
+      <button class="chip" data-filter="task" type="button">Task</button>
+    </div>
+  </div>
+
+  <div id="goalsList" class="goals"></div>
+</div>
+
+
+  <!-- Widok: TASKI (checklista) -->
+  <div id="tasksView" style="display:none;">
+    <div class="today-hint">Taski jako checklisty (bez dat).</div>
+    <div id="tasksList" class="goals"></div>
+  </div>
+
+
+  <!-- Widok: KALENDARZ -->
+  <div id="calendarView" style="display:none;">
+    <div class="calendar-header">
+      <button class="icon-btn" id="calPrev" aria-label="Poprzedni miesiąc">◀</button>
+      <div class="calendar-title" id="calTitle">Miesiąc</div>
+      <button class="icon-btn" id="calNext" aria-label="Następny miesiąc">▶</button>
+      <button class="btn btn--ghost" id="calThis">Bieżący</button>
+    </div>
+
+    <div class="calendar-weekdays">
+      <div>Pn</div><div>Wt</div><div>Śr</div><div>Cz</div><div>Pt</div><div>So</div><div>Nd</div>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+
+    <div class="calendar-legend">
+      <div class="calendar-hint">Kliknij dzień, aby przejść do tej daty (Dzisiaj).</div>
+      <div id="calendarDayDetails" class="calendar-details"></div>
+    </div>
+  </div>
+
+</section>
+
+    
+  </main>
+
+  <!-- Modal: Add/Edit Goal -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal__header">
+        <h3 id="modalTitle">Dodaj cel</h3>
+        <button class="icon-btn" id="btnCloseModal" aria-label="Zamknij">✕</button>
+      </div>
+
+      <form id="goalForm" class="form">
+        <div class="form-row">
+          <label>Nazwa</label>
+          <input type="text" id="goalName" maxlength="60" placeholder="np. Siłownia / Dieta / Nauka" required />
+        </div>
+
+        <div class="form-row">
+          <label>Typ</label>
+          <select id="goalType">
+            <option value="daily">Daily (odznaczane w kalendarzu)</option>
+            <option value="task">Task (checklista)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="showInOverview" checked />
+            <span>Pokazuj postęp na stronie głównej</span>
+          </label>
+          <small class="hint">Wyłącz, jeśli nie chcesz widzieć kafelka postępu dla tego celu.</small>
+        </div>
+
+        <div class="form-row" id="dailyFields">
+          <label>Cel roczny dla Daily (liczba dni / razy)</label>
+          <input type="number" id="dailyTarget" min="1" step="1" value="150" />
+          <small class="hint">
+            Przykład: 150. Każde odhaczenie dnia = +1. Procent liczy się automatycznie.
+          </small>
+        </div>
+
+        <div class="form-row" id="taskFields">
+          <label>Podzadania (1 linia = 1 punkt)</label>
+          <textarea id="taskItems" rows="6" placeholder="np.&#10;Zebrać źródła&#10;Napisać rozdział 1"></textarea>
+          <small class="hint">Taski nie mają dat — to checklista.</small>
+        </div>
+<div class="form-row">
+          <label>Kolor</label>
+          <input type="color" id="goalColor" value="#3b82f6" />
+        </div>
+
+        <div class="form-row">
+          <label>Opis (opcjonalnie)</label>
+          <textarea id="goalNote" rows="3" maxlength="240" placeholder="Krótka notatka / zasady celu"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnCancel">Anuluj</button>
+          <button type="submit" class="btn" id="btnSave">Zapisz</button>
+        </div>
+
+        <input type="hidden" id="editingId" />
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
