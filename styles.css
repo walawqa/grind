@@ -144,7 +144,7 @@ input[type="date"]{
 /* ===== Floating Add (FAB) ===== */
 .fab{
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: calc(16px + env(safe-area-inset-bottom));
   z-index: 25;
 

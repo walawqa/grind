@@ -1609,7 +1609,15 @@ function openModal(mode, goal = null) {
   if (showEl) showEl.checked = (goal?.showInOverview !== false);
 
   const dailyTargetEl = $("#dailyTarget");
-  if (dailyTargetEl) dailyTargetEl.value = String(goal?.dailyTarget ?? 150);
+if (dailyTargetEl) {
+  // ➕ dodawanie nowego celu → puste pole
+  // ✏️ edycja celu → wczytaj zapisaną wartość
+  if (mode === "add") {
+    dailyTargetEl.value = "";
+  } else {
+    dailyTargetEl.value = String(goal?.dailyTarget ?? "");
+  }
+}
 
   const taskItemsEl = $("#taskItems");
   if (taskItemsEl) taskItemsEl.value = (goal?.type === "task" && Array.isArray(goal.items))
