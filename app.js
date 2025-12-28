@@ -631,6 +631,20 @@ function deleteExercise(id){
   saveGymData();
   renderGym();
 }
+
+// iOS (PL keyboard) often uses comma as decimal separator. We normalize it to dot
+// before parsing/saving so values like "60,5" are preserved and appear in history.
+function normalizeDecimalString(v){
+  const s = String(v ?? "").trim();
+  if(!s) return "";
+  // keep digits, comma, dot (basic safety) and convert comma to dot
+  return s.replace(/,/g, ".");
+}
+function toNumberLocale(v){
+  const s = normalizeDecimalString(v);
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
 function setGymLog(weekKey, workoutKey, exId, sets, reps, weight){
   const wk = (workoutKey === "B" || workoutKey === "C") ? workoutKey : "A";
   if(!state.gym.logs || typeof state.gym.logs !== "object") state.gym.logs = {};
@@ -639,7 +653,8 @@ function setGymLog(weekKey, workoutKey, exId, sets, reps, weight){
   state.gym.logs[weekKey][wk][exId] = {
     sets: Number.isFinite(Number(sets)) ? Math.max(0, Number(sets)) : 0,
     reps: Number.isFinite(Number(reps)) ? Math.max(0, Number(reps)) : 0,
-    weight: Number.isFinite(Number(weight)) ? Math.max(0, Number(weight)) : 0,
+    // allow decimals with comma ("60,5")
+    weight: Math.max(0, toNumberLocale(weight)),
     updatedAt: Date.now(),
   };
   saveGymData();
@@ -651,7 +666,11 @@ function getGymLog(weekKey, workoutKey, exId){
   return {
     sets: Number.isFinite(Number(row?.sets)) ? Number(row.sets) : "",
     reps: Number.isFinite(Number(row?.reps)) ? Number(row.reps) : "",
-    weight: Number.isFinite(Number(row?.weight)) ? Number(row.weight) : "",
+    weight: (() => {
+      const v = row?.weight;
+      const n = toNumberLocale(v);
+      return n > 0 ? n : "";
+    })(),
   };
 }
 
@@ -720,8 +739,7 @@ function renderGym(){
                  value="${log.sets}"
                  data-action="gymLog"
                  data-id="${ex.id}"
-                 data-field="sets"
-                 placeholder="np. 12" />
+                 data-field="sets" />
         </div>
         <div class="gym-field">
           <label>Powt. (na serię)</label>
@@ -729,8 +747,7 @@ function renderGym(){
                  value="${log.reps}"
                  data-action="gymLog"
                  data-id="${ex.id}"
-                 data-field="reps"
-                 placeholder="np. 8" />
+                 data-field="reps" />
         </div>
         <div class="gym-field">
           <label>Ciężar (kg)</label>
@@ -738,8 +755,7 @@ function renderGym(){
                  value="${log.weight}"
                  data-action="gymLog"
                  data-id="${ex.id}"
-                 data-field="weight"
-                 placeholder="np. 60" />
+                 data-field="weight" />
         </div>
 
         <div class="gym-actions">
@@ -770,7 +786,7 @@ function openGymHistory(exId){
     if(!entry) continue;
     const sets = Number.isFinite(Number(entry.sets)) ? Number(entry.sets) : 0;
     const reps = Number.isFinite(Number(entry.reps)) ? Number(entry.reps) : 0;
-    const weight = Number.isFinite(Number(entry.weight)) ? Number(entry.weight) : 0;
+    const weight = Math.max(0, toNumberLocale(entry.weight));
     if(sets === 0 && weight === 0) continue;
     rows.push({ wk, sets, reps, weight, updatedAt: entry.updatedAt || 0 });
   }
@@ -1205,7 +1221,7 @@ function renderTodayDaily() {
         <div class="today-name" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</div>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <span class="pill" title="Streak">🔥${getDailyCurrentStreak(g, state.selectedDate)} 🏆${getDailyBestStreak(g)}</span>
+        <span class="pill" title="Streak">🔥${getDailyCurrentStreak(g, state.selectedDate)}</span>
         <button class="today-btn ${done ? "today-btn--on" : ""}"
                 data-action="toggleDailyToday"
                 data-id="${g.id}">
@@ -1820,6 +1836,12 @@ function init() {
     const id = el.dataset.id;
     const field = el.dataset.field;
     if (!id || !field) return;
+
+    // iOS/PL keyboard: decimal comma -> dot (so it doesn't vanish on refresh)
+    if(field === "weight"){
+      const norm = normalizeDecimalString(el.value);
+      if(norm !== el.value) el.value = norm;
+    }
 
     const cur = getGymLog(state.gymWeek, state.gymWorkout || "A", id);
     const sets = field === "sets" ? el.value : cur.sets;

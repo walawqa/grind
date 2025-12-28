@@ -5,15 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>WALAWKA GRIND</title>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- PWA / iOS (Add to Home Screen) -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0b1220">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Grind">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="icon" type="image/png" href="favicon.png">
 </head>
 <body>
   <header class="topbar">
@@ -146,19 +137,19 @@
       <div class="diet-form">
         <div class="diet-field">
           <label>Kcal</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietInKcal" placeholder="np. 2250" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInKcal" />
         </div>
         <div class="diet-field">
           <label>Białko (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietInP" placeholder="np. 170" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInP" />
         </div>
         <div class="diet-field">
           <label>Węgle (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietInC" placeholder="np. 220" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInC" />
         </div>
         <div class="diet-field">
           <label>Tłuszcze (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietInF" placeholder="np. 65" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietInF" />
         </div>
       </div>
       <div class="diet-mini" id="dietMiniStatus"></div>
@@ -177,19 +168,19 @@
       <div class="diet-form diet-form--targets">
         <div class="diet-field">
           <label>Kcal</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetKcal" placeholder="np. 2400" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetKcal" />
         </div>
         <div class="diet-field">
           <label>Białko (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetP" placeholder="np. 180" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetP" />
         </div>
         <div class="diet-field">
           <label>Węgle (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetC" placeholder="np. 250" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetC" />
         </div>
         <div class="diet-field">
           <label>Tłuszcze (g)</label>
-          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetF" placeholder="np. 70" />
+          <input type="number" inputmode="numeric" min="0" step="1" id="dietTargetF" />
         </div>
       </div>
     </div>
@@ -436,16 +427,6 @@
 
 
   <script src="app.js"></script>
-
-
-  <script>
-    // PWA: offline cache (Service Worker)
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
-      });
-    }
-  </script>
 
 </body>
 </html>
