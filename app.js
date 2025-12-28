@@ -1,3 +1,36 @@
+
+/** iOS Safari: prevent "rubber band" overscroll (white background) while keeping inner scroll working */
+function bindOverscrollLock(){
+  const scroller = document.querySelector('.layout');
+  if(!scroller) return;
+
+  let startY = 0;
+  let startScrollTop = 0;
+
+  document.addEventListener('touchstart', (e)=>{
+    if(e.touches && e.touches.length === 1){
+      startY = e.touches[0].clientY;
+      startScrollTop = scroller.scrollTop;
+    }
+  }, {passive:true});
+
+  document.addEventListener('touchmove', (e)=>{
+    if(!(e.touches && e.touches.length === 1)) return;
+
+    // Allow pinch/zoom gestures to be handled elsewhere (we already disable zoom)
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY; // >0 = pulling down, <0 = pushing up
+
+    const atTop = scroller.scrollTop <= 0;
+    const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+
+    // If the scroll container can't scroll further in that direction, prevent the body bounce.
+    if((atTop && deltaY > 0) || (atBottom && deltaY < 0)){
+      e.preventDefault();
+    }
+  }, {passive:false});
+}
+
 /* ===========================
    Cele — lokalny tracker (v1.3)
    - 100% offline (localStorage)
@@ -1648,30 +1681,6 @@ function bindGoalFilters() {
 function init() {
   loadAppearance();
   bindUiModal();
-  // iOS: block pinch-zoom + double-tap zoom (Safari + Home Screen)
-  // Note: some iOS accessibility settings can still override this.
-  ["gesturestart","gesturechange","gestureend"].forEach((ev) => {
-    document.addEventListener(ev, (e) => {
-      e.preventDefault();
-    }, { passive: false });
-  });
-
-  let __lastTouchEnd = 0;
-  document.addEventListener("touchend", (e) => {
-    const now = Date.now();
-    if(now - __lastTouchEnd <= 300){
-      e.preventDefault();
-    }
-    __lastTouchEnd = now;
-  }, { passive: false });
-
-  // Desktop browsers: prevent ctrl/cmd + wheel zoom inside the app
-  document.addEventListener("wheel", (e) => {
-    if(e.ctrlKey || e.metaKey){
-      e.preventDefault();
-    }
-  }, { passive: false });
-
 
   // date controls
   $("#datePicker").addEventListener("change", (e) => {
@@ -2097,3 +2106,5 @@ function escapeHtml(str) {
 }
 
 init();
+
+window.addEventListener('load', ()=> bindOverscrollLock());
