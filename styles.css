@@ -7,6 +7,8 @@
   --line:rgba(255,255,255,.10);
   --btn:#2563eb;
   --btn2:#1d4ed8;
+  --accent:#2563eb;
+  --accentRGB: 37,99,235;
   --danger:#ef4444;
   --shadow: 0 18px 50px rgba(0,0,0,.35);
   --radius:18px;
@@ -210,8 +212,8 @@ input[type="date"]{
   font-size:12px;
 }
 .chip--active{
-  background: rgba(37,99,235,.18);
-  border-color: rgba(37,99,235,.45);
+  background: rgba(var(--accentRGB),.18);
+  border-color: rgba(var(--accentRGB),.45);
 }
 
 .goals{
@@ -481,7 +483,7 @@ font-size:16px; padding:10px 12px
   opacity:.35;
 }
 .cal-day--today{
-  box-shadow: 0 0 0 2px rgba(37,99,235,.35);
+  box-shadow: 0 0 0 2px rgba(var(--accentRGB),.35);
 }
 .cal-day__num{
   font-weight: 900;
@@ -798,14 +800,46 @@ select option {
 }
 .preset-btn:hover{ background: rgba(255,255,255,.08); }
 .preset-btn.is-active{
-  border-color: rgba(37,99,235,.55);
-  background: rgba(37,99,235,.16);
+  border-color: rgba(var(--accentRGB),.55);
+  background: rgba(var(--accentRGB),.16);
 }
 .preset-dots{ display:flex; gap:6px; }
 .preset-dot{
   width:10px; height:10px;
   border-radius:999px;
   box-shadow: 0 0 0 1px rgba(255,255,255,.10);
+}
+
+/* Accent color picker row */
+.accent-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+#accentColor{
+  width: 54px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+}
+#accentColor::-webkit-color-swatch-wrapper{ padding: 0; }
+#accentColor::-webkit-color-swatch{
+  border: none;
+  border-radius: 10px;
+}
+.accent-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accentRGB), .35);
+  background: rgba(var(--accentRGB), .12);
+  color: var(--text);
+  font-weight: 900;
+  font-size: 12px;
 }
 
 
@@ -856,4 +890,106 @@ select option {
 .toast--show{
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+
+/* ===== Savings (Skarbonka) ===== */
+.savings{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap:12px;
+}
+
+.sav{
+  background: rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:12px;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+
+.sav__left{width:110px; flex:0 0 110px; display:grid; place-items:center}
+.sav__body{flex:1; min-width:0}
+.sav__title{display:flex; gap:8px; align-items:center; justify-content:space-between}
+.sav__name{font-weight:900; margin:0; font-size:14px}
+.sav__meta{margin:6px 0 10px; color:var(--muted); font-size:12px}
+.sav__actions{display:flex; gap:8px; flex-wrap:wrap}
+
+/* simple jar */
+.jar{
+  width:84px;
+  height:110px;
+  border-radius:20px 20px 18px 18px;
+  border:1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.03);
+  position:relative;
+  overflow:hidden;
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+.jar::before{
+  content:"";
+  position:absolute;
+  top:-10px; left:10px; right:10px;
+  height:18px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.04);
+}
+.jar__fill{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:0%;
+  background: linear-gradient(180deg, rgba(16,185,129,.22), rgba(var(--accentRGB),.22));
+}
+.jar__shine{
+  position:absolute;
+  top:0; bottom:0; left:10px;
+  width:14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.12), transparent);
+  transform: skewX(-12deg);
+  opacity:.55;
+}
+.jar__pct{
+  position:absolute;
+  left:0; right:0; top:50%;
+  transform: translateY(-50%);
+  text-align:center;
+  font-weight:1000;
+  font-size:13px;
+  text-shadow: 0 6px 18px rgba(0,0,0,.45);
+}
+
+
+/* --- Tab visibility toggles (Settings) --- */
+.tabs-toggle-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  margin-top:10px;
+}
+.tabs-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:12px;
+  background: rgba(255,255,255,.04);
+}
+.tabs-toggle input{
+  width:18px;
+  height:18px;
+}
+
+/* --- Tab icons inside chips --- */
+.tab-ico{
+  display:inline-flex;
+  margin-right:6px;
+  line-height:1;
+}
+.tab-label{
+  display:inline-flex;
+  line-height:1;
 }

@@ -9,7 +9,13 @@
 const LS_KEY = "goals_tracker_v1";
 const GYM_LS_KEY = "gym_tracker_v1";
 const DIET_LS_KEY = "diet_tracker_v1";
+const SAVINGS_LS_KEY = "savings_tracker_v1";
+const NOTES_LS_KEY = "notes_tracker_v1";
 const APPEAR_LS_KEY = "walawka_bg_preset";
+const ACCENT_LS_KEY = "walawka_accent_v1";
+const TABS_LS_KEY = "walawka_tabs_v1";
+const TABICONS_LS_KEY = "walawka_tab_icons_v1";
+
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -107,6 +113,9 @@ function uiModalCancel(){
 function openSettings(){
   const modal = $("#settingsModal");
   if(!modal) return;
+  syncTabPrefsUI();
+  syncTabIconsUI();
+  syncAccentUI();
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden","false");
 }
@@ -142,10 +151,217 @@ function loadAppearance(){
 
 
 
+
+
+/* ======= Accent color (Primary) ======= */
+function hexToRgbTriplet(hex){
+  if(!hex) return null;
+  const h = String(hex).trim();
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(h);
+  if(!m) return null;
+  const v = m[1];
+  const r = parseInt(v.slice(0,2), 16);
+  const g = parseInt(v.slice(2,4), 16);
+  const b = parseInt(v.slice(4,6), 16);
+  return { r, g, b, hex: "#" + v.toLowerCase() };
+}
+function clamp01(n){ return Math.max(0, Math.min(1, n)); }
+function rgbToHex(r,g,b){
+  const to = (x) => x.toString(16).padStart(2, "0");
+  return "#" + to(r) + to(g) + to(b);
+}
+// percent: -1..1 (negative -> darker)
+function shadeHex(hex, percent){
+  const t = hexToRgbTriplet(hex);
+  if(!t) return null;
+  const p = clamp01(Math.abs(percent));
+  const mix = (c) => {
+    const target = percent < 0 ? 0 : 255;
+    return Math.round(c + (target - c) * p);
+  };
+  return rgbToHex(mix(t.r), mix(t.g), mix(t.b));
+}
+function applyAccent(hex, { save = true } = {}){
+  const t = hexToRgbTriplet(hex) || hexToRgbTriplet("#2563eb");
+  const primary = t.hex;
+  const secondary = shadeHex(primary, -0.18) || "#1d4ed8"; // slightly darker
+  document.documentElement.style.setProperty("--btn", primary);
+  document.documentElement.style.setProperty("--btn2", secondary);
+  document.documentElement.style.setProperty("--accent", primary);
+  document.documentElement.style.setProperty("--accentRGB", `${t.r},${t.g},${t.b}`);
+  if(save){
+    try{ localStorage.setItem(ACCENT_LS_KEY, primary); }catch{}
+  }
+}
+function loadAccent(){
+  try{
+    const saved = localStorage.getItem(ACCENT_LS_KEY);
+    applyAccent(saved || "#2563eb", { save: false });
+  }catch{
+    applyAccent("#2563eb", { save: false });
+  }
+}
+function syncAccentUI(){
+  const inp = $("#accentColor");
+  if(!inp) return;
+  try{
+    const saved = localStorage.getItem(ACCENT_LS_KEY);
+    inp.value = (saved && /^#?[0-9a-fA-F]{6}$/.test(saved)) ? (saved.startsWith("#") ? saved : "#"+saved) : "#2563eb";
+  }catch{
+    inp.value = "#2563eb";
+  }
+}
+function defaultTabPrefs(){
+  return {
+    today: true,
+    goals: true,
+    tasks: true,
+    calendar: true,
+    gym: true,
+    diet: true,
+    savings: true,
+    notes: true,
+  };
+}
+
+function loadTabPrefs(){
+  try{
+    const raw = localStorage.getItem(TABS_LS_KEY);
+    if(!raw) return defaultTabPrefs();
+    const parsed = JSON.parse(raw);
+    const def = defaultTabPrefs();
+    // merge + normalize booleans
+    for(const k of Object.keys(def)){
+      def[k] = (k === "today") ? true : (parsed && typeof parsed[k] === "boolean" ? parsed[k] : def[k]);
+    }
+    return def;
+  }catch{
+    return defaultTabPrefs();
+  }
+}
+
+function saveTabPrefs(){
+  try{
+    localStorage.setItem(TABS_LS_KEY, JSON.stringify(state.tabPrefs || defaultTabPrefs()));
+  }catch{}
+}
+
+function applyTabPrefs(){
+  const prefs = state.tabPrefs || defaultTabPrefs();
+
+  const map = {
+    today: "tabToday",
+    goals: "tabGoals",
+    tasks: "tabTasks",
+    calendar: "tabCalendar",
+    gym: "tabGym",
+    diet: "tabDiet",
+    savings: "tabSavings",
+    notes: "tabNotes",
+  };
+
+  for(const [view, id] of Object.entries(map)){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    // Today is always visible
+    const visible = (view === "today") ? true : (prefs[view] !== false);
+    el.style.display = visible ? "" : "none";
+  }
+
+  // If current view was hidden, safely bounce to Today
+  if(prefs[state.view] === false){
+    // avoid recursion loops: only change if needed
+    if(state.view !== "today") setView("today");
+  }
+}
+
+function syncTabPrefsUI(){
+  const prefs = state.tabPrefs || defaultTabPrefs();
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if(el) el.checked = !!val;
+  };
+  // Today not configurable
+  set("toggleTabGoals", prefs.goals);
+  set("toggleTabTasks", prefs.tasks);
+  set("toggleTabCalendar", prefs.calendar);
+  set("toggleTabGym", prefs.gym);
+  set("toggleTabDiet", prefs.diet);
+  set("toggleTabSavings", prefs.savings);
+  set("toggleTabNotes", prefs.notes);
+}
+
+function loadTabIconsPref(){
+  try{
+    const raw = localStorage.getItem(TABICONS_LS_KEY);
+    if(raw === null || raw === undefined) return true; // default ON
+    return raw === "1" || raw === "true";
+  }catch{
+    return true;
+  }
+}
+
+function saveTabIconsPref(){
+  try{
+    localStorage.setItem(TABICONS_LS_KEY, state.tabIconsEnabled ? "1" : "0");
+  }catch{}
+}
+
+const TAB_ICON_MAP = {
+  today: "☀️",
+  goals: "🎯",
+  tasks: "✅",
+  calendar: "📅",
+  gym: "🏋️",
+  diet: "🥗",
+  savings: "🫙",
+  notes: "📝",
+};
+
+function applyTabIcons(){
+  const enabled = !!state.tabIconsEnabled;
+  const map = {
+    today: "tabToday",
+    goals: "tabGoals",
+    tasks: "tabTasks",
+    calendar: "tabCalendar",
+    gym: "tabGym",
+    diet: "tabDiet",
+    savings: "tabSavings",
+    notes: "tabNotes",
+  };
+
+  for(const key of Object.keys(map)){
+    const el = document.getElementById(map[key]);
+    if(!el) continue;
+    const label = el.dataset?.label || el.textContent?.trim() || key;
+    const ico = el.dataset?.icon || TAB_ICON_MAP[key] || "";
+
+    if(enabled && ico){
+      el.innerHTML = `<span class="tab-ico" aria-hidden="true">${ico}</span><span class="tab-label">${label}</span>`;
+    }else{
+      el.textContent = label;
+    }
+  }
+}
+
+function syncTabIconsUI(){
+  const cb = document.getElementById('toggleTabIcons');
+  if(cb) cb.checked = !!state.tabIconsEnabled;
+}
+
+
+
+
+
 const state = {
   data: loadData(),
   gym: loadGymData(),
   diet: loadDietData(),
+  savings: loadSavingsData(),
+  notes: loadNotesData(),
+  tabPrefs: loadTabPrefs(),
+  tabIconsEnabled: loadTabIconsPref(),
   selectedDate: todayISO(),
   gymWeek: isoWeekKey(todayISO()),
   dietWeek: isoWeekKey(todayISO()),
@@ -316,6 +532,86 @@ function saveDietData(){
   localStorage.setItem(DIET_LS_KEY, JSON.stringify(state.diet));
 }
 
+
+
+/* ======= Savings (Skarbonka) ======= */
+function loadSavingsData(){
+  try{
+    const raw = localStorage.getItem(SAVINGS_LS_KEY);
+    if(!raw) return { version: 1, goals: [] };
+    const parsed = JSON.parse(raw);
+    if(!parsed || !Array.isArray(parsed.goals)) return { version: 1, goals: [] };
+    parsed.goals = parsed.goals
+      .filter(g => g && typeof g.name === "string")
+      .map(g => ({
+        id: g.id || uid(),
+        name: g.name.trim(),
+        target: Number.isFinite(Number(g.target)) ? Math.max(1, Math.floor(Number(g.target))) : 1,
+        current: Number.isFinite(Number(g.current)) ? Math.max(0, Math.floor(Number(g.current))) : 0,
+        createdAt: g.createdAt || Date.now(),
+        updatedAt: g.updatedAt || g.createdAt || Date.now(),
+        history: Array.isArray(g.history)
+          ? g.history
+              .filter(h => h && (h.type === "add" || h.type === "sub"))
+              .map(h => ({
+                id: h.id || uid(),
+                ts: Number.isFinite(Number(h.ts)) ? Number(h.ts) : Date.now(),
+                type: h.type,
+                amount: Number.isFinite(Number(h.amount)) ? Math.max(0, Math.floor(Number(h.amount))) : 0,
+                after: (h.after === null || typeof h.after === "undefined")
+                  ? null
+                  : (Number.isFinite(Number(h.after)) ? Math.max(0, Math.floor(Number(h.after))) : null),
+              }))
+              .filter(h => h.amount > 0)
+          : [],
+      }))
+      .filter(g => g.name.length > 0);
+    return parsed;
+  }catch{
+    return { version: 1, goals: [] };
+  }
+}
+
+/* ======= Notes (Notatnik) ======= */
+function loadNotesData(){
+  try{
+    const raw = localStorage.getItem(NOTES_LS_KEY);
+    if(!raw) return { notes: [], search: "" };
+    const parsed = JSON.parse(raw);
+    const notes = Array.isArray(parsed?.notes) ? parsed.notes : [];
+    return {
+      notes: notes.map(n => ({
+        id: String(n.id || uid()),
+        title: String(n.title || "").trim(),
+        body: String(n.body || ""),
+        pinned: !!n.pinned,
+        createdAt: Number(n.createdAt) || Date.now(),
+        updatedAt: Number(n.updatedAt) || Number(n.createdAt) || Date.now(),
+      })),
+      search: String(parsed?.search || ""),
+    };
+  }catch{
+    return { notes: [], search: "" };
+  }
+}
+function saveNotesData(){
+  try{
+    localStorage.setItem(NOTES_LS_KEY, JSON.stringify({
+      notes: state.notes?.notes || [],
+      search: state.notes?.search || "",
+    }));
+  }catch{}
+}
+
+
+function saveSavingsData(){
+  localStorage.setItem(SAVINGS_LS_KEY, JSON.stringify(state.savings));
+}
+function clamp(n, a, b){ return Math.min(b, Math.max(a, n)); }
+function money(n){
+  const v = Number.isFinite(Number(n)) ? Number(n) : 0;
+  return Math.round(v).toString();
+}
 function setDietTargets(payload){
   state.diet.targets = {
     kcal: Number.isFinite(Number(payload.kcal)) ? Math.max(0, Math.floor(Number(payload.kcal))) : 0,
@@ -366,6 +662,17 @@ function weekDatesFromWeekKey(weekKey){
   const days = [];
   for(let i=0;i<7;i++) days.push(shiftISODate(start, i));
   return days;
+}
+
+
+function getWeeklyProgress(goal, dateISO){
+  if(!goal || goal.dailyMode !== "weekly") return null;
+  const wk = isoWeekKey(dateISO);
+  const target = Math.max(1, Math.min(7, Math.floor(Number(goal.weeklyTimes) || 3)));
+  goal.weeklyTimes = target;
+  const days = weekDatesFromWeekKey(wk);
+  const done = days.reduce((acc, d) => acc + (goal.dailyLog?.[d] ? 1 : 0), 0);
+  return { wk, done, target, txt: `${done}/${target}` };
 }
 
 function dietInRangeStatus(val, target, mode){
@@ -555,6 +862,433 @@ function renderDiet(){
     </div>
   `;
 }
+
+
+
+/* ======= Savings UI ======= */
+function addSavingsGoal(payload){
+  const g = {
+    id: uid(),
+    name: String(payload.name||"").trim(),
+    target: Number.isFinite(Number(payload.target)) ? Math.max(1, Math.floor(Number(payload.target))) : 1,
+    current: Number.isFinite(Number(payload.current)) ? Math.max(0, Math.floor(Number(payload.current))) : 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    history: [],
+  };
+
+  // If user sets "Aktualnie" on create, remember it as initial deposit
+  if(g.current > 0){
+    g.history.unshift({
+      id: uid(),
+      ts: Date.now(),
+      type: "add",
+      amount: g.current,
+      after: g.current,
+    });
+  }
+
+  if(!g.name) return;
+  state.savings.goals.unshift(g);
+  saveSavingsData();
+  renderSavings();
+}
+function updateSavingsGoal(id, payload){
+  const idx = state.savings.goals.findIndex(x => x.id === id);
+  if(idx === -1) return;
+  const cur = state.savings.goals[idx];
+  const upd = {
+    ...cur,
+    name: String(payload.name||"").trim(),
+    target: Number.isFinite(Number(payload.target)) ? Math.max(1, Math.floor(Number(payload.target))) : cur.target,
+    // allow updating current only if provided (empty keeps current)
+    current: (payload.current === "" || payload.current === null || typeof payload.current === "undefined")
+      ? cur.current
+      : (Number.isFinite(Number(payload.current)) ? Math.max(0, Math.floor(Number(payload.current))) : cur.current),
+    updatedAt: Date.now(),
+  };
+  if(!upd.name) return;
+  state.savings.goals[idx] = upd;
+  saveSavingsData();
+  renderSavings();
+}
+function deleteSavingsGoal(id){
+  state.savings.goals = state.savings.goals.filter(x => x.id !== id);
+  saveSavingsData();
+  renderSavings();
+}
+
+function applySavingsAmount(goalId, mode, amount){
+  const g = state.savings.goals.find(x => x.id === goalId);
+  if(!g) return;
+
+  const a = Number.isFinite(Number(amount)) ? Math.max(0, Math.floor(Number(amount))) : 0;
+  if(a <= 0) return;
+
+  const before = Number(g.current) || 0;
+
+  if(mode === "sub"){
+    g.current = Math.max(0, before - a);
+  }else{
+    g.current = before + a;
+  }
+
+  // record history entry
+  if(!Array.isArray(g.history)) g.history = [];
+  g.history.unshift({
+    id: uid(),
+    ts: Date.now(),
+    type: (mode === "sub") ? "sub" : "add",
+    amount: a,
+    after: Number(g.current) || 0,
+  });
+
+  // keep history size reasonable
+  if(g.history.length > 200) g.history.length = 200;
+
+  g.updatedAt = Date.now();
+
+  // UI-only micro animation marker (jar bump/shake). Does not affect other views.
+  state.savings._anim = { goalId, mode: (mode === "sub" ? "sub" : "add"), ts: Date.now() };
+  saveSavingsData();
+  renderSavings();
+}
+
+function openSavingsModal(mode, goal=null){
+  const modal = $("#savingsModal");
+  if(!modal) return;
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden","false");
+
+  $("#savingsModalTitle").textContent = (mode === "edit") ? "Edytuj skarbonkę" : "Dodaj skarbonkę";
+  $("#editingSavingsId").value = goal?.id || "";
+  $("#savName").value = goal?.name || "";
+  $("#savTarget").value = (goal?.target || "") ? String(goal.target) : "";
+  $("#savCurrent").value = (goal && Number.isFinite(Number(goal.current))) ? String(goal.current) : "";
+  $("#savName")?.focus();
+}
+function closeSavingsModal(){
+  const modal = $("#savingsModal");
+  if(!modal) return;
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden","true");
+}
+
+function openSavingsAmountModal(goalId, mode){
+  const modal = $("#savingsAmountModal");
+  if(!modal) return;
+  const g = state.savings.goals.find(x => x.id === goalId);
+  if(!g) return;
+
+  const m = (mode === "sub") ? "Wypłata" : "Wpłata";
+  $("#savingsAmountTitle").textContent = m;
+  $("#savAmountGoalId").value = goalId;
+  $("#savAmountMode").value = (mode === "sub") ? "sub" : "add";
+  $("#savAmount").value = "";
+  $("#savAmountHint").textContent = `Cel: ${g.name} • ${money(g.current)} / ${money(g.target)} PLN`;
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden","false");
+  $("#savAmount")?.focus();
+}
+function closeSavingsAmountModal(){
+  const modal = $("#savingsAmountModal");
+  if(!modal) return;
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden","true");
+}
+
+function formatDateTimePL(ts){
+  try{
+    return new Intl.DateTimeFormat("pl-PL", { dateStyle: "short", timeStyle: "short" }).format(new Date(ts));
+  }catch{
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+}
+
+async function openSavingsHistoryModal(goalId){
+  const modal = $("#savingsHistoryModal");
+
+  const g = state.savings.goals.find(x => x.id === goalId);
+  if(!g) return;
+
+  // Fallback: jeśli w HTML nie ma modala historii, pokaż historię w naszym UI-alert (bez zmian w index.html)
+  if(!modal){
+    const hist = Array.isArray(g.history) ? g.history.slice() : [];
+    hist.sort((a,b) => (Number(b.ts)||0) - (Number(a.ts)||0));
+
+    if(hist.length === 0){
+      await uiAlert("Brak historii. Zrób pierwszą wpłatę lub wypłatę.", `Historia: ${g.name}`);
+      return;
+    }
+
+    const lines = hist.slice(0, 30).map(h => {
+      const type = h.type === "sub" ? "Wypłata" : "Wpłata";
+      const sign = h.type === "sub" ? "−" : "+";
+      const after = (h.after === null || typeof h.after === "undefined") ? "—" : money(h.after);
+      return `${formatDateTimePL(h.ts)} • ${type}: ${sign}${money(h.amount)} PLN (po: ${after})`;
+    }).join("\n");
+
+    const more = hist.length > 30 ? `\n\n(+${hist.length - 30} starszych wpisów)` : "";
+    await uiAlert(lines + more, `Historia: ${g.name}`);
+    return;
+  }
+
+  $("#savingsHistoryTitle").textContent = `Historia: ${g.name}`;
+  $("#savHistoryGoalId").value = goalId;
+
+  const meta = $("#savingsHistoryMeta");
+  if(meta){
+    const histLen = Array.isArray(g.history) ? g.history.length : 0;
+    meta.textContent = `Aktualnie: ${money(g.current)} / ${money(g.target)} PLN • wpisów: ${histLen}`;
+  }
+
+  const rows = $("#savingsHistoryRows");
+  if(rows){
+    const hist = Array.isArray(g.history) ? g.history.slice() : [];
+    hist.sort((a,b) => (Number(b.ts)||0) - (Number(a.ts)||0));
+
+    if(hist.length === 0){
+      rows.innerHTML = `<tr><td colspan="3" style="opacity:.75;">Brak historii. Zrób pierwszą wpłatę lub wypłatę.</td></tr>`;
+    }else{
+      rows.innerHTML = hist.map(h => {
+        const type = h.type === "sub" ? "Wypłata" : "Wpłata";
+        const sign = h.type === "sub" ? "−" : "+";
+        const after = (h.after === null || typeof h.after === "undefined") ? "—" : money(h.after);
+        return `
+          <tr>
+            <td>${escapeHtml(formatDateTimePL(h.ts))}</td>
+            <td>${type}</td>
+            <td><b>${sign}${money(h.amount)}</b> PLN <span style="opacity:.7;">(po: ${after})</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden","false");
+  $("#btnCloseSavingsHistory")?.focus();
+}
+
+function closeSavingsHistoryModal(){
+  const modal = $("#savingsHistoryModal");
+  if(!modal) return;
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden","true");
+}
+
+function renderSavings(){
+  const view = $("#savingsView");
+  const list = $("#savingsList");
+  if(!view || !list) return;
+
+  const goals = Array.isArray(state.savings.goals) ? state.savings.goals : [];
+  list.innerHTML = "";
+
+  if(goals.length === 0){
+    list.innerHTML = `<div class="card"><div class="card__label">Brak skarbonek</div><div class="card__value">Kliknij „Dodaj skarbonkę”</div></div>`;
+    return;
+  }
+
+  // optional UI animation marker (set by applySavingsAmount)
+  const anim = state.savings?._anim;
+  let animUsed = false;
+
+  for(const g of goals){
+    const cur = Math.max(0, Number(g.current)||0);
+    const tar = Math.max(1, Number(g.target)||1);
+    const pct = clamp(Math.round((cur / tar) * 100), 0, 100);
+    const left = Math.max(0, tar - cur);
+
+    const el = document.createElement("div");
+    el.className = "sav";
+    el.innerHTML = `
+      <div class="sav__left">
+        <div class="jar" aria-label="Słoik">
+          <div class="jar__fill" style="height:${pct}%;"></div>
+          <div class="jar__shine"></div>
+          <div class="jar__pct">${pct}%</div>
+        </div>
+      </div>
+
+      <div class="sav__body">
+        <div class="sav__title">
+          <p class="sav__name">${escapeHtml(g.name)}</p>
+          <span class="badge">PLN</span>
+        </div>
+
+        <div class="sav__meta">
+          <div><b>${money(cur)}</b> / ${money(tar)} • zostało: ${money(left)}</div>
+        </div>
+
+        <div class="sav__actions">
+          <button class="small-btn" data-action="savAdd" data-id="${g.id}">+ Wpłata</button>
+          <button class="small-btn" data-action="savSub" data-id="${g.id}">− Wypłata</button>
+          <button class="small-btn" data-action="savHistory" data-id="${g.id}">Historia</button>
+          <button class="small-btn" data-action="savEdit" data-id="${g.id}">Edytuj</button>
+          <button class="small-btn small-btn--danger" data-action="savDelete" data-id="${g.id}">Usuń</button>
+        </div>
+      </div>
+    `;
+
+    // Apply a tiny CSS animation to the jar right after deposit/withdraw.
+    if(anim && anim.goalId === g.id && (Date.now() - anim.ts) < 1200){
+      animUsed = true;
+      el.classList.add(anim.mode === "sub" ? "sav--shake" : "sav--bump");
+      // Remove the class after animation ends (no re-render needed)
+      setTimeout(() => el.classList.remove("sav--bump","sav--shake"), 520);
+    }
+
+    list.appendChild(el);
+  }
+
+  // Clear marker once it was used, so it doesn't replay on next render.
+  if(animUsed) state.savings._anim = null;
+}
+
+/* ======= Notes rendering ======= */
+function renderNotes(){
+  const view = $("#notesView");
+  const searchEl = $("#notesSearch");
+  const pinnedBox = $("#notesPinned");
+  const listBox = $("#notesList");
+  const sep = $("#notesSep");
+  if(!view || !pinnedBox || !listBox) return;
+  if(searchEl && searchEl.value !== String(state.notes?.search||"")) searchEl.value = String(state.notes?.search||"");
+
+  const all = Array.isArray(state.notes?.notes) ? state.notes.notes : [];
+  const q = String(state.notes?.search || "").trim().toLowerCase();
+
+  const filtered = q ? all.filter(n => {
+    return (String(n.title||"").toLowerCase().includes(q) || String(n.body||"").toLowerCase().includes(q));
+  }) : all.slice();
+
+  // sort by pinned, then updatedAt desc
+  filtered.sort((a,b) => {
+    const ap = a.pinned ? 1 : 0;
+    const bp = b.pinned ? 1 : 0;
+    if(bp !== ap) return bp - ap;
+    return (Number(b.updatedAt)||0) - (Number(a.updatedAt)||0);
+  });
+
+  const pinned = filtered.filter(n => n.pinned);
+  const regular = filtered.filter(n => !n.pinned);
+
+  // local UI state (notes): which note cards are expanded (NOT persisted)
+  if(!state.__notesUi) state.__notesUi = { expanded: {} };
+
+  const noteHtml = (n) => {
+    const title = escapeHtml(n.title || "Bez tytułu");
+    const rawBody = String(n.body||"").trim();
+    const body = escapeHtml(rawBody);
+
+    // Decide if we should offer collapse/expand.
+    // User problem: many short lines => total chars small, but height huge.
+    const lineCount = rawBody ? rawBody.split(/\r?\n/).length : 0;
+    const shouldCollapse = (lineCount > 4) || (rawBody.length > 220);
+    const isExpanded = !!state.__notesUi.expanded?.[n.id];
+
+    const dt = (n.updatedAt || n.createdAt) ? formatDateTimePL(n.updatedAt || n.createdAt) : "";
+    const pinLabel = n.pinned ? "Odepnij" : "Przypnij";
+    const toggleLabel = isExpanded ? "Zwiń" : "Rozwiń";
+
+    return `
+      <div class="note-card ${isExpanded ? "is-expanded" : ""}" data-id="${n.id}">
+        <div class="note-card__head">
+          <div class="note-card__title">${title}</div>
+          <div class="note-card__meta">${escapeHtml(dt)}</div>
+        </div>
+
+        <div class="note-card__body ${shouldCollapse ? "note-card__body--collapsible" : ""}">
+          ${body || '<span style="opacity:.7;">(pusta notatka)</span>'}
+        </div>
+
+        <div class="note-card__actions">
+          ${shouldCollapse ? `<button class="small-btn" data-action="noteToggle" data-id="${n.id}">${toggleLabel}</button>` : ""}
+          <button class="small-btn" data-action="notePin" data-id="${n.id}">${pinLabel}</button>
+          <button class="small-btn" data-action="noteEdit" data-id="${n.id}">Edytuj</button>
+          <button class="small-btn small-btn--danger" data-action="noteDelete" data-id="${n.id}">Usuń</button>
+        </div>
+      </div>
+    `;
+  };
+
+  if(filtered.length === 0){
+    const msg = q ? "Brak wyników wyszukiwania." : "Brak notatek";
+    pinnedBox.innerHTML = `<div class="card"><div class="card__label">${msg}</div><div class="card__value">${q ? "Zmień frazę lub dodaj nową notatkę." : "Kliknij „Dodaj notatkę”"}</div></div>`;
+    listBox.innerHTML = "";
+    if(sep) sep.style.display = "none";
+    return;
+  }
+
+  pinnedBox.innerHTML = pinned.map(noteHtml).join("") || "";
+  listBox.innerHTML = regular.map(noteHtml).join("") || "";
+
+  if(sep){
+    sep.style.display = (pinned.length > 0 && regular.length > 0) ? "block" : "none";
+  }
+}
+
+/* ======= Notes actions ======= */
+function addNote(payload){
+  const title = String(payload.title||"").trim();
+  const body = String(payload.body||"");
+  const pinned = !!payload.pinned;
+  const now = Date.now();
+  const note = { id: uid(), title, body, pinned, createdAt: now, updatedAt: now };
+  state.notes.notes.unshift(note);
+  saveNotesData();
+  renderNotes();
+}
+function updateNote(id, payload){
+  const idx = state.notes.notes.findIndex(n => n.id === id);
+  if(idx === -1) return;
+  const cur = state.notes.notes[idx];
+  state.notes.notes[idx] = {
+    ...cur,
+    title: String(payload.title||"").trim(),
+    body: String(payload.body||""),
+    pinned: !!payload.pinned,
+    updatedAt: Date.now(),
+  };
+  saveNotesData();
+  renderNotes();
+}
+function deleteNote(id){
+  state.notes.notes = state.notes.notes.filter(n => n.id !== id);
+  saveNotesData();
+  renderNotes();
+}
+function togglePinNote(id){
+  const idx = state.notes.notes.findIndex(n => n.id === id);
+  if(idx === -1) return;
+  state.notes.notes[idx].pinned = !state.notes.notes[idx].pinned;
+  state.notes.notes[idx].updatedAt = Date.now();
+  saveNotesData();
+  renderNotes();
+}
+
+function openNoteModal(mode, note=null){
+  const modal = $("#notesModal");
+  if(!modal) return;
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden","false");
+  $("#notesModalTitle").textContent = (mode === "edit") ? "Edytuj notatkę" : "Dodaj notatkę";
+  $("#editingNoteId").value = note?.id || "";
+  $("#noteTitle").value = note?.title || "";
+  $("#noteBody").value = note?.body || "";
+  $("#notePinned").checked = !!note?.pinned;
+  $("#noteTitle")?.focus();
+}
+function closeNoteModal(){
+  const modal = $("#notesModal");
+  if(!modal) return;
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden","true");
+}
+
 
 
 // ISO week key: YYYY-Www (Monday start)
@@ -1060,6 +1794,16 @@ function addGoal(payload) {
   if (type === "daily") {
     goal.dailyLog = {};
     goal.dailyTarget = Math.max(1, Math.floor(Number(payload.dailyTarget) || 150));
+
+    // Weekly mode support (optional)
+    goal.dailyMode = (payload.dailyMode === "weekly") ? "weekly" : "daily";
+    if (goal.dailyMode === "weekly") {
+      goal.weeklyTimes = Math.max(1, Math.min(7, Math.floor(Number(payload.weeklyTimes) || 3)));
+      goal.weeklyAchieved = {};
+    } else {
+      goal.weeklyTimes = "";
+      goal.weeklyAchieved = {};
+    }
   } else {
     goal.items = Array.isArray(payload.items) ? payload.items : [];
   }
@@ -1088,6 +1832,18 @@ function updateGoal(id, payload) {
   if (newType === "daily") {
     updated.dailyLog = g.type === "daily" ? (g.dailyLog || {}) : {};
     updated.dailyTarget = Math.max(1, Math.floor(Number(payload.dailyTarget) || (g.dailyTarget || 150)));
+
+    // Weekly mode support (optional)
+    updated.dailyMode = (payload.dailyMode === "weekly") ? "weekly" : "daily";
+    if (updated.dailyMode === "weekly") {
+      updated.weeklyTimes = Math.max(1, Math.min(7, Math.floor(Number(payload.weeklyTimes) || Number(g.weeklyTimes) || 3)));
+      updated.weeklyAchieved = (g.weeklyAchieved && typeof g.weeklyAchieved === "object") ? g.weeklyAchieved : {};
+    } else {
+      updated.weeklyTimes = "";
+      // keep history map to avoid losing "already achieved" flags, but it's harmless either way
+      updated.weeklyAchieved = (g.weeklyAchieved && typeof g.weeklyAchieved === "object") ? g.weeklyAchieved : {};
+    }
+
     delete updated.items;
   } else {
     // zachowaj "done" dla tych samych tekstów
@@ -1201,7 +1957,12 @@ function renderOverviewTiles() {
 
     if (g.type === "daily") {
       pct = getDailyPercentYear(g, year);
-      sub = `🔥${getDailyCurrentStreak(g, state.selectedDate)} 🏆${getDailyBestStreak(g)}`;
+      if (g.dailyMode === "weekly") {
+        const wp = getWeeklyProgress(g, state.selectedDate);
+        sub = wp ? `Tydzień ${wp.txt}` : "";
+      } else {
+        sub = `🔥${getDailyCurrentStreak(g, state.selectedDate)} 🏆${getDailyBestStreak(g)}`;
+      }
     } else {
       pct = getTaskPercent(g);
       const items = Array.isArray(g.items) ? g.items : [];
@@ -1326,6 +2087,10 @@ function renderGoals() {
       const countY = getDailyCountInYear(g, yr);
       const target = getDailyTarget(g);
 
+      const streakHtml = (g.dailyMode === "weekly")
+        ? ""
+        : `<span class="pill">🔥${getDailyCurrentStreak(g, state.selectedDate)} 🏆${getDailyBestStreak(g)}</span>`;
+
       el.innerHTML = `
         <div class="goal__left">${pieSVG(pct, g.color)}</div>
         <div class="goal__body">
@@ -1341,7 +2106,8 @@ function renderGoals() {
             </button>
             <button class="small-btn" data-action="edit" data-id="${g.id}">Edytuj</button>
             <button class="small-btn small-btn--danger" data-action="delete" data-id="${g.id}">Usuń</button>
-            <span class="pill">🔥${getDailyCurrentStreak(g, state.selectedDate)} 🏆${getDailyBestStreak(g)}</span>
+            
+            ${streakHtml}
           </div>
         </div>
       `;
@@ -1597,6 +2363,8 @@ renderOverviewTiles();
   renderTasks();
   renderCalendar();
   renderDiet();
+  renderSavings();
+  renderNotes();
   applyPendingFocus();
   applyPendingEdit();
 }
@@ -1608,7 +2376,7 @@ function setView(view) {
 
   const addBtn = $("#btnAdd");
   if (addBtn){
-    const full = (view === "gym") ? "Dodaj ćwiczenie" : "Dodaj cel";
+    const full = (view === "gym") ? "Dodaj ćwiczenie" : (view === "savings" ? "Dodaj skarbonkę" : (view === "notes" ? "Dodaj notatkę" : "Dodaj cel"));
     const label = $("#btnAddLabel");
     if (label) label.textContent = full;
     else addBtn.textContent = full;
@@ -1623,6 +2391,8 @@ function setView(view) {
   const calendarView = $("#calendarView");
   const gymView = $("#gymView");
   const dietView = $("#dietView");
+  const savingsView = $("#savingsView");
+  const notesView = $("#notesView");
 
   if (todayView) todayView.style.display = view === "today" ? "block" : "none";
   if (goalsView) goalsView.style.display = view === "goals" ? "block" : "none";
@@ -1630,6 +2400,8 @@ function setView(view) {
   if (calendarView) calendarView.style.display = view === "calendar" ? "block" : "none";
   if (gymView) gymView.style.display = view === "gym" ? "block" : "none";
   if (dietView) dietView.style.display = view === "diet" ? "block" : "none";
+  if (savingsView) savingsView.style.display = view === "savings" ? "block" : "none";
+  if (notesView) notesView.style.display = view === "notes" ? "block" : "none";
 
   const tabToday = $("#tabToday");
   const tabGoals = $("#tabGoals");
@@ -1637,12 +2409,16 @@ function setView(view) {
   const tabCalendar = $("#tabCalendar");
   const tabGym = $("#tabGym");
   const tabDiet = $("#tabDiet");
+  const tabSavings = $("#tabSavings");
+  const tabNotes = $("#tabNotes");
   if (tabToday) tabToday.classList.toggle("chip--active", view === "today");
   if (tabGoals) tabGoals.classList.toggle("chip--active", view === "goals");
   if (tabTasks) tabTasks.classList.toggle("chip--active", view === "tasks");
   if (tabCalendar) tabCalendar.classList.toggle("chip--active", view === "calendar");
   if (tabGym) tabGym.classList.toggle("chip--active", view === "gym");
   if (tabDiet) tabDiet.classList.toggle("chip--active", view === "diet");
+  if (tabSavings) tabSavings.classList.toggle("chip--active", view === "savings");
+  if (tabNotes) tabNotes.classList.toggle("chip--active", view === "notes");
 
   render();
 }
@@ -1659,7 +2435,8 @@ function openModal(mode, goal = null) {
   $("#goalName").value = goal?.name || "";
   $("#goalType").value = goal?.type || "daily";
   $("#goalColor").value = goal?.color || "#3b82f6";
-  $("#goalNote").value = goal?.note || "";
+  const noteEl = $("#goalNote");
+  if (noteEl) noteEl.value = goal?.note || "";
 
   const showEl = $("#showInOverview");
   if (showEl) showEl.checked = (goal?.showInOverview !== false);
@@ -1674,6 +2451,16 @@ if (dailyTargetEl) {
     dailyTargetEl.value = String(goal?.dailyTarget ?? "");
   }
 }
+  // Weekly mode fields (Daily)
+  const dailyModeEl = $("#dailyMode");
+  const weeklyTimesEl = $("#weeklyTimes");
+  if (dailyModeEl) dailyModeEl.value = (goal?.dailyMode === "weekly") ? "weekly" : "daily";
+  if (weeklyTimesEl) {
+    const v = Math.floor(Number(goal?.weeklyTimes) || 3);
+    weeklyTimesEl.value = (dailyModeEl?.value === "weekly") ? String(Math.max(1, Math.min(7, v))) : "";
+  }
+  const weeklyFields = $("#weeklyFields");
+  if (weeklyFields) weeklyFields.style.display = ($("#goalType")?.value === "daily" && dailyModeEl?.value === "weekly") ? "flex" : "none";
 
   const taskItemsEl = $("#taskItems");
   if (taskItemsEl) taskItemsEl.value = (goal?.type === "task" && Array.isArray(goal.items))
@@ -1696,6 +2483,13 @@ function refreshFields() {
 
   if (dailyFields) dailyFields.style.display = (type === "daily") ? "flex" : "none";
   if (taskFields) taskFields.style.display = (type === "task") ? "flex" : "none";
+  // Weekly sub-fields for Daily
+  const weeklyFields = $("#weeklyFields");
+  const mode = $("#dailyMode")?.value || "daily";
+  if (weeklyFields) {
+    weeklyFields.style.display = (type === "daily" && mode === "weekly") ? "flex" : "none";
+  }
+
 }
 
 /* ======= Filters ONLY for goals view ======= */
@@ -1716,6 +2510,10 @@ function bindGoalFilters() {
 /* ======= Events ======= */
 function init() {
   loadAppearance();
+  loadAccent();
+  applyTabPrefs();
+  applyTabIcons();
+  syncTabPrefsUI();
   bindUiModal();
   // iOS: block pinch-zoom + double-tap zoom (Safari + Home Screen)
   // Note: some iOS accessibility settings can still override this.
@@ -1770,6 +2568,8 @@ function init() {
   $("#tabCalendar")?.addEventListener("click", () => setView("calendar"));
   $("#tabGym")?.addEventListener("click", () => setView("gym"));
   $("#tabDiet")?.addEventListener("click", () => setView("diet"));
+  $("#tabSavings")?.addEventListener("click", () => setView("savings"));
+  $("#tabNotes")?.addEventListener("click", () => setView("notes"));
 
   // today list actions
   $("#todayDailyList")?.addEventListener("click", (e) => {
@@ -1777,6 +2577,33 @@ function init() {
     if (!btn) return;
     if (btn.dataset.action === "toggleDailyToday") {
       toggleDaily(btn.dataset.id, state.selectedDate);
+    }
+  });
+
+  // savings list actions (delegation)
+  $("#savingsList")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    if (!action || !id) return;
+
+    if (action === "savAdd") return void openSavingsAmountModal(id, "add");
+    if (action === "savSub") return void openSavingsAmountModal(id, "sub");
+    if (action === "savHistory") return void openSavingsHistoryModal(id);
+
+    if (action === "savEdit") {
+      const g = (state.savings?.goals || []).find(x => x.id === id);
+      if (g) openSavingsModal("edit", g);
+      return;
+    }
+
+    if (action === "savDelete") {
+      const ok = await uiConfirm("Usunąć tę skarbonkę? Tej operacji nie da się cofnąć.", "Usuń skarbonkę");
+      if (!ok) return;
+      deleteSavingsGoal(id);
+      return;
     }
   });
 
@@ -1832,16 +2659,19 @@ function init() {
     state.calendarMonth = shiftMonth(state.calendarMonth || monthKeyFromISO(state.selectedDate), -1);
     renderCalendar();
   renderDiet();
+  renderSavings();
   });
   $("#calNext")?.addEventListener("click", () => {
     state.calendarMonth = shiftMonth(state.calendarMonth || monthKeyFromISO(state.selectedDate), +1);
     renderCalendar();
   renderDiet();
+  renderSavings();
   });
   $("#calThis")?.addEventListener("click", () => {
     state.calendarMonth = monthKeyFromISO(todayISO());
     renderCalendar();
   renderDiet();
+  renderSavings();
   });
 
   $("#calendarGrid")?.addEventListener("click", (e) => {
@@ -1874,14 +2704,17 @@ function init() {
   $("#dietPrevWeek")?.addEventListener("click", () => {
     state.dietWeek = shiftWeek(state.dietWeek, -1);
     renderDiet();
+  renderSavings();
   });
   $("#dietNextWeek")?.addEventListener("click", () => {
     state.dietWeek = shiftWeek(state.dietWeek, +1);
     renderDiet();
+  renderSavings();
   });
   $("#dietThisWeek")?.addEventListener("click", () => {
     state.dietWeek = isoWeekKey(todayISO());
     renderDiet();
+  renderSavings();
   });
 
   // diet: targets inputs
@@ -1893,6 +2726,7 @@ function init() {
       f: $("#dietTargetF")?.value,
     });
     renderDiet();
+  renderSavings();
   };
   $("#dietTargetKcal")?.addEventListener("change", dietTargetsHandler);
   $("#dietTargetP")?.addEventListener("change", dietTargetsHandler);
@@ -1910,6 +2744,7 @@ function init() {
     // keep week in sync with selected date (optional convenience)
     state.dietWeek = isoWeekKey(state.selectedDate);
     renderDiet();
+  renderSavings();
   };
   $("#dietInKcal")?.addEventListener("change", dietDayHandler);
   $("#dietInP")?.addEventListener("change", dietDayHandler);
@@ -2008,6 +2843,135 @@ function init() {
   $("#gymHistoryBackdrop")?.addEventListener("click", closeGymHistory);
 
 
+  // savings modals
+  $("#btnCloseSavingsModal")?.addEventListener("click", closeSavingsModal);
+  $("#savingsModalBackdrop")?.addEventListener("click", closeSavingsModal);
+  $("#btnCancelSavings")?.addEventListener("click", closeSavingsModal);
+
+  $("#savingsForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = ($("#savName")?.value || "").trim();
+    const target = $("#savTarget")?.value;
+    const current = $("#savCurrent")?.value;
+
+    if(!name){
+      await uiAlert("Podaj nazwę celu skarbonki.");
+      return;
+    }
+    const t = Number(target);
+    if(!Number.isFinite(t) || t <= 0){
+      await uiAlert("Podaj poprawną kwotę docelową (większą od 0).");
+      return;
+    }
+
+    const editingId = $("#editingSavingsId")?.value || "";
+    if(editingId){
+      updateSavingsGoal(editingId, { name, target: t, current });
+    }else{
+      addSavingsGoal({ name, target: t, current: Number(current)||0 });
+    }
+    closeSavingsModal();
+  });
+
+  $("#btnCloseSavingsAmount")?.addEventListener("click", closeSavingsAmountModal);
+  $("#savingsAmountBackdrop")?.addEventListener("click", closeSavingsAmountModal);
+  $("#btnCancelSavingsAmount")?.addEventListener("click", closeSavingsAmountModal);
+
+  $("#savingsAmountForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const goalId = $("#savAmountGoalId")?.value || "";
+    const mode = $("#savAmountMode")?.value || "add";
+    const amount = Number($("#savAmount")?.value || 0);
+
+    if(!goalId) return closeSavingsAmountModal();
+    if(!Number.isFinite(amount) || amount <= 0){
+      await uiAlert("Podaj poprawną kwotę (większą od 0).");
+      return;
+    }
+
+    applySavingsAmount(goalId, mode, amount);
+    closeSavingsAmountModal();
+  });
+  // savings history modal
+  $("#btnCloseSavingsHistory")?.addEventListener("click", closeSavingsHistoryModal);
+  $("#savingsHistoryBackdrop")?.addEventListener("click", closeSavingsHistoryModal);
+
+
+  // notes (notatnik)
+  $("#notesSearch")?.addEventListener("input", (e) => {
+    state.notes.search = e.target.value || "";
+    saveNotesData();
+    renderNotes();
+  });
+
+  $("#notesView")?.addEventListener("click", async (e) => {
+    // 1) Button actions
+    const btn = e.target.closest("button");
+    if(btn){
+      const action = btn.getAttribute("data-action");
+      const id = btn.getAttribute("data-id");
+      if(!action || !id) return;
+
+      if(action === "noteToggle"){
+        if(!state.__notesUi) state.__notesUi = { expanded: {} };
+        state.__notesUi.expanded[id] = !state.__notesUi.expanded[id];
+        renderNotes();
+        return;
+      }
+      if(action === "notePin"){
+        togglePinNote(id);
+        return;
+      }
+      if(action === "noteEdit"){
+        const note = state.notes.notes.find(n => n.id === id);
+        if(note) openNoteModal("edit", note);
+        return;
+      }
+      if(action === "noteDelete"){
+        const note = state.notes.notes.find(n => n.id === id);
+        const ok = await uiConfirm(`Usunąć notatkę „${note?.title || "Bez tytułu"}”?`, "Usuń notatkę");
+        if(ok) deleteNote(id);
+        return;
+      }
+      return;
+    }
+
+    // 2) Click on title/body toggles expand (only if collapsible)
+    const card = e.target.closest(".note-card");
+    if(!card) return;
+    const id = card.getAttribute("data-id");
+    if(!id) return;
+    const body = card.querySelector(".note-card__body");
+    if(!body || !body.classList.contains("note-card__body--collapsible")) return;
+
+    if(!state.__notesUi) state.__notesUi = { expanded: {} };
+    state.__notesUi.expanded[id] = !state.__notesUi.expanded[id];
+    renderNotes();
+  });
+
+  // notes modal
+  $("#btnCloseNotes")?.addEventListener("click", closeNoteModal);
+  $("#notesModalBackdrop")?.addEventListener("click", closeNoteModal);
+  $("#btnCancelNotes")?.addEventListener("click", closeNoteModal);
+  $("#notesForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const id = ($("#editingNoteId")?.value || "").trim();
+    const title = ($("#noteTitle")?.value || "").trim();
+    const body = ($("#noteBody")?.value || "");
+    const pinned = !!$("#notePinned")?.checked;
+
+    if(id){
+      updateNote(id, { title, body, pinned });
+    }else{
+      addNote({ title, body, pinned });
+    }
+    closeNoteModal();
+  });
+
+
+
+
+
   // settings (appearance)
   $("#btnSettings")?.addEventListener("click", openSettings);
   $("#btnCloseSettings")?.addEventListener("click", closeSettings);
@@ -2024,11 +2988,48 @@ function init() {
 
   $("#btnResetGradient")?.addEventListener("click", () => applyGradientPreset("blue"));
 
+  // settings: accent color (primary)
+  $("#accentColor")?.addEventListener("input", (e) => {
+    applyAccent(e.target.value);
+  });
+  $("#accentColor")?.addEventListener("change", (e) => {
+    applyAccent(e.target.value);
+  });
+
+
+
+  // settings: tab visibility (only UI, no impact on data)
+  $("#settingsTabsToggles")?.addEventListener("change", (e) => {
+    const cb = e.target.closest("input[type='checkbox'][data-tab]");
+    if(!cb) return;
+    const key = cb.dataset.tab;
+    if(!key) return;
+
+    if(!state.tabPrefs) state.tabPrefs = loadTabPrefs();
+    // today is always visible
+    if(key === "today") { cb.checked = true; return; }
+
+    state.tabPrefs[key] = !!cb.checked;
+    saveTabPrefs();
+    applyTabPrefs();
+  applyTabIcons();
+  });
+
+
+  // settings: tab icons on/off (visual only)
+  $("#toggleTabIcons")?.addEventListener("change", (e) => {
+    state.tabIconsEnabled = !!e.target.checked;
+    saveTabIconsPref();
+    applyTabIcons();
+  });
+
 
 
 // add goal
   $("#btnAdd").addEventListener("click", () => {
     if (state.view === "gym") return void openGymModal("add");
+    if (state.view === "savings") return void openSavingsModal("add");
+    if (state.view === "notes") return void openNoteModal("add");
     openModal("add");
   });
 // modal close
@@ -2037,8 +3038,19 @@ function init() {
   $("#btnCancel").addEventListener("click", closeModal);
 
   $("#goalType").addEventListener("change", refreshFields);
+  $("#dailyMode")?.addEventListener("change", () => {
+    refreshFields();
+    if ($("#dailyMode")?.value === "weekly") {
+      const wt = $("#weeklyTimes");
+      if (wt && !wt.value) wt.value = "3";
+      wt?.focus();
+    } else {
+      const wt = $("#weeklyTimes");
+      if (wt) wt.value = "";
+    }
+  });
 
-  // submit form
+// submit form
   $("#goalForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -2048,10 +3060,12 @@ function init() {
       name: $("#goalName").value,
       type,
       color: $("#goalColor").value,
-      note: $("#goalNote").value,
+      note: ($("#goalNote")?.value || ""),
       showInOverview: document.getElementById("showInOverview")?.checked,
       dailyTarget: $("#dailyTarget") ? $("#dailyTarget").value : 150,
-      items: [],
+            dailyMode: $("#dailyMode")?.value || "daily",
+      weeklyTimes: $("#weeklyTimes")?.value || "",
+items: [],
     };
 
     if (!payload.name.trim()) {
@@ -2066,7 +3080,19 @@ function init() {
         return;
       }
       payload.dailyTarget = t;
-    } else {
+    
+      // Weekly mode validation
+      if ((payload.dailyMode || "daily") === "weekly") {
+        const w = Math.floor(Number(payload.weeklyTimes) || 0);
+        if (!Number.isFinite(w) || w < 1 || w > 7) {
+          await uiAlert("Dla trybu tygodniowego podaj liczbę dni 1–7.");
+          return;
+        }
+        payload.weeklyTimes = w;
+      } else {
+        payload.weeklyTimes = "";
+      }
+} else {
       const raw = ($("#taskItems")?.value || "")
         .split("\n")
         .map(s => s.trim())

@@ -38,12 +38,14 @@
   <div class="panel__header">
     <h2>Widok</h2>
     <div class="filters">
-      <button class="chip chip--active" data-view="today" id="tabToday">Dzisiaj</button>
-      <button class="chip" data-view="goals" id="tabGoals">Cele</button>
-      <button class="chip" data-view="tasks" id="tabTasks">Taski</button>
-      <button class="chip" data-view="calendar" id="tabCalendar">Kalendarz</button>
-      <button class="chip" data-view="gym" id="tabGym">Siłownia</button>
-      <button class="chip" data-view="diet" id="tabDiet">Dieta</button>
+      <button class="chip chip--active" data-view="today" id="tabToday" data-label="Dzisiaj" data-icon="☀️">Dzisiaj</button>
+      <button class="chip" data-view="goals" id="tabGoals" data-label="Cele" data-icon="🎯">Cele</button>
+      <button class="chip" data-view="tasks" id="tabTasks" data-label="Taski" data-icon="✅">Taski</button>
+      <button class="chip" data-view="calendar" id="tabCalendar" data-label="Kalendarz" data-icon="📅">Kalendarz</button>
+      <button class="chip" data-view="gym" id="tabGym" data-label="Siłownia" data-icon="🏋️">Siłownia</button>
+      <button class="chip" data-view="diet" id="tabDiet" data-label="Dieta" data-icon="🥗">Dieta</button>
+      <button class="chip" data-view="savings" id="tabSavings" data-label="Skarbonka" data-icon="🫙">Skarbonka</button>
+      <button class="chip" data-view="notes" id="tabNotes" data-label="Notatnik" data-icon="📝">Notatnik</button>
     </div>
   </div>
 
@@ -187,7 +189,29 @@
         </div>
       </div>
     </div>
+  
   </div>
+
+  <!-- Widok: SKARBONKA -->
+  <div id="savingsView" style="display:none;">
+    <div class="today-hint">Skarbonki działają niezależnie od celów. Dodaj cel, ustaw kwotę i wpłacaj/wycofuj.</div>
+    <div id="savingsList" class="savings"></div>
+  </div>
+
+  <!-- Widok: NOTATNIK -->
+  <div id="notesView" style="display:none;">
+    <div class="today-hint">Notatnik działa niezależnie od reszty aplikacji. Twórz wiele notatek i przypinaj ważne na górze.</div>
+
+    <div class="notes-toolbar">
+      <input id="notesSearch" class="notes-search" type="text" placeholder="Szukaj w notatkach…" />
+    </div>
+
+    <div id="notesPinned" class="notes-list"></div>
+    <div class="notes-sep" id="notesSep" style="display:none;">Pozostałe</div>
+    <div id="notesList" class="notes-list"></div>
+  </div>
+
+</div>
 
 </section>
 
@@ -265,7 +289,10 @@
           <label>Kolor</label>
           <input type="color" id="goalColor" value="#3b82f6" />
         </div>
-        <div class="form-actions">
+          <small class="hint">Wpływa na przyciski, aktywne chipy, obwódki i highlighty.</small>
+        </div>
+
+<div class="form-actions">
           <button type="button" class="btn btn--ghost" id="btnCancel">Anuluj</button>
           <button type="submit" class="btn" id="btnSave">Zapisz</button>
         </div>
@@ -311,8 +338,7 @@
           <label>Notatka (opcjonalnie)</label>
           <textarea id="exNote" rows="3" maxlength="240" placeholder="np. przerwy 2–3 min, tempo 3-1-1"></textarea>
         </div>
-
-        <div class="form-actions">
+<div class="form-actions">
           <button type="button" class="btn btn--ghost" id="btnCancelGym">Anuluj</button>
           <button type="submit" class="btn" id="btnSaveGym">Zapisz</button>
         </div>
@@ -323,7 +349,106 @@
   </div>
 
 
-  <!-- Modal: Gym Progress History -->
+
+  <!-- Modal: Skarbonka — dodaj/edytuj cel -->
+  <div class="modal" id="savingsModal" aria-hidden="true">
+    <div class="modal__backdrop" id="savingsModalBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="savingsModalTitle">
+      <div class="modal__header">
+        <h3 id="savingsModalTitle">Dodaj skarbonkę</h3>
+        <button class="icon-btn" id="btnCloseSavingsModal" aria-label="Zamknij">✕</button>
+      </div>
+
+      <form id="savingsForm" class="form">
+        <div class="form-row">
+          <label>Nazwa celu</label>
+          <input type="text" id="savName" maxlength="60" placeholder="np. iPhone / Wakacje / Kurs" required />
+        </div>
+
+        <div class="form-row">
+          <label>Kwota docelowa (PLN)</label>
+          <input type="number" inputmode="decimal" min="1" step="1" id="savTarget" placeholder="np. 5000" required />
+        </div>
+
+        <div class="form-row">
+          <label>Aktualnie (PLN) — opcjonalnie</label>
+          <input type="number" inputmode="decimal" min="0" step="1" id="savCurrent" placeholder="np. 200" />
+        </div>
+<div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnCancelSavings">Anuluj</button>
+          <button type="submit" class="btn" id="btnSaveSavings">Zapisz</button>
+        </div>
+
+        <input type="hidden" id="editingSavingsId" />
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Skarbonka — wpłata/wypłata -->
+  <div class="modal" id="savingsAmountModal" aria-hidden="true">
+    <div class="modal__backdrop" id="savingsAmountBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="savingsAmountTitle">
+      <div class="modal__header">
+        <h3 id="savingsAmountTitle">Wpłata</h3>
+        <button class="icon-btn" id="btnCloseSavingsAmount" aria-label="Zamknij">✕</button>
+      </div>
+
+      <form id="savingsAmountForm" class="form">
+        <div class="form-row">
+          <label>Kwota (PLN)</label>
+          <input type="number" inputmode="decimal" min="1" step="1" id="savAmount" placeholder="np. 50" required />
+          <small class="hint" id="savAmountHint"></small>
+        </div>
+<div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnCancelSavingsAmount">Anuluj</button>
+          <button type="submit" class="btn" id="btnApplySavingsAmount">Zastosuj</button>
+        </div>
+
+        <input type="hidden" id="savAmountGoalId" />
+        <input type="hidden" id="savAmountMode" />
+      </form>
+    </div>
+  </div>
+
+  
+  <!-- Modal: Notatnik -->
+  <div class="modal" id="notesModal" aria-hidden="true">
+    <div class="modal__backdrop" id="notesModalBackdrop"></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="notesModalTitle">
+      <div class="modal__header">
+        <h3 id="notesModalTitle">Dodaj notatkę</h3>
+        <button class="icon-btn" id="btnCloseNotes" aria-label="Zamknij">✕</button>
+      </div>
+
+      <form id="notesForm" class="form">
+        <div class="form-row">
+          <label>Tytuł</label>
+          <input type="text" id="noteTitle" placeholder="np. Plan na jutro" />
+        </div>
+
+        <div class="form-row">
+          <label>Treść</label>
+          <textarea id="noteBody" rows="7" placeholder="Napisz notatkę…"></textarea>
+        </div>
+
+        <div class="form-row form-row--inline">
+          <label class="checkbox">
+            <input type="checkbox" id="notePinned" />
+            <span>Przypnij na górze</span>
+          </label>
+        </div>
+<div class="form-actions">
+          <button type="button" class="btn btn--ghost" id="btnCancelNotes">Anuluj</button>
+          <button type="submit" class="btn" id="btnSaveNote">Zapisz</button>
+        </div>
+
+        <input type="hidden" id="editingNoteId" />
+      </form>
+    </div>
+  </div>
+
+
+<!-- Modal: Gym Progress History -->
   <div class="modal" id="gymHistoryModal" aria-hidden="true">
     <div class="modal__backdrop" id="gymHistoryBackdrop"></div>
     <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="gymHistoryTitle">
@@ -415,9 +540,41 @@
             </button>
           </div>
           <small class="hint">Ustawienie zapisuje się lokalnie (na tym urządzeniu).</small>
+
+        <div class="form-row">
+          <label>Kolor akcentu</label>
+          <div class="accent-row">
+            <input type="color" id="accentColor" value="#2563eb" aria-label="Kolor akcentu" />
+            <span class="accent-chip">Podgląd</span>
+          </div>
+          <small class="hint">Wpływa na przyciski, aktywne chipy, obwódki i highlighty.</small>
         </div>
 
-        <div class="form-actions">
+        </div>
+
+        <div class="form-row">
+          <label>Widoczne zakładki</label>
+          <div class="tabs-toggle-grid" id="settingsTabsToggles">
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabGoals" data-tab="goals" checked><span>Cele</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabTasks" data-tab="tasks" checked><span>Taski</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabCalendar" data-tab="calendar" checked><span>Kalendarz</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabGym" data-tab="gym" checked><span>Siłownia</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabDiet" data-tab="diet" checked><span>Dieta</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabSavings" data-tab="savings" checked><span>Skarbonka</span></label>
+            <label class="tabs-toggle"><input type="checkbox" id="toggleTabNotes" data-tab="notes" checked><span>Notatnik</span></label>
+          </div>
+          <small class="hint">Ukryte zakładki znikną z paska. Dane zostają na urządzeniu.</small>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox" style="display:flex;align-items:center;gap:10px;">
+            <input type="checkbox" id="toggleTabIcons" checked />
+            <span>Ikony zakładek</span>
+          </label>
+          <small class="hint">Wyłącz, jeśli wolisz czysty tekst w zakładkach.</small>
+        </div>
+
+<div class="form-actions">
           <button type="button" class="btn btn--ghost" id="btnResetGradient">Reset</button>
           <button type="button" class="btn" id="btnCloseSettings2">OK</button>
         </div>
