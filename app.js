@@ -1648,6 +1648,30 @@ function bindGoalFilters() {
 function init() {
   loadAppearance();
   bindUiModal();
+  // iOS: block pinch-zoom + double-tap zoom (Safari + Home Screen)
+  // Note: some iOS accessibility settings can still override this.
+  ["gesturestart","gesturechange","gestureend"].forEach((ev) => {
+    document.addEventListener(ev, (e) => {
+      e.preventDefault();
+    }, { passive: false });
+  });
+
+  let __lastTouchEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if(now - __lastTouchEnd <= 300){
+      e.preventDefault();
+    }
+    __lastTouchEnd = now;
+  }, { passive: false });
+
+  // Desktop browsers: prevent ctrl/cmd + wheel zoom inside the app
+  document.addEventListener("wheel", (e) => {
+    if(e.ctrlKey || e.metaKey){
+      e.preventDefault();
+    }
+  }, { passive: false });
+
 
   // date controls
   $("#datePicker").addEventListener("change", (e) => {
