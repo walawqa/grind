@@ -751,7 +751,13 @@ function renderGym(){
         </div>
         <div class="gym-field">
           <label>Ciężar (kg)</label>
-          <input type="number" inputmode="decimal" min="0" step="0.5"
+          <!--
+            iOS Safari (PL locale) can treat decimals in <input type="number"> as invalid
+            (especially when the keyboard uses comma). Using type="text" + inputmode="decimal"
+            keeps the raw value stable, and we normalize comma->dot in JS before saving.
+          -->
+          <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
+                 placeholder=""
                  value="${log.weight}"
                  data-action="gymLog"
                  data-id="${ex.id}"
@@ -1830,14 +1836,16 @@ function init() {
 
 
   // gym list inputs + actions
-  $("#gymList")?.addEventListener("input", (e) => {
+  // NOTE: iOS Safari can be flaky with "input" events for numeric keyboards.
+  // We handle both input + change + blur to ensure values are persisted.
+  const handleGymLog = (e) => {
     const el = e.target;
     if (el?.dataset?.action !== "gymLog") return;
     const id = el.dataset.id;
     const field = el.dataset.field;
     if (!id || !field) return;
 
-    // iOS/PL keyboard: decimal comma -> dot (so it doesn't vanish on refresh)
+    // iOS/PL keyboard: decimal comma -> dot
     if(field === "weight"){
       const norm = normalizeDecimalString(el.value);
       if(norm !== el.value) el.value = norm;
@@ -1848,7 +1856,11 @@ function init() {
     const reps = field === "reps" ? el.value : cur.reps;
     const weight = field === "weight" ? el.value : cur.weight;
     setGymLog(state.gymWeek, state.gymWorkout || "A", id, sets, reps, weight);
-  });
+  };
+  $("#gymList")?.addEventListener("input", handleGymLog);
+  $("#gymList")?.addEventListener("change", handleGymLog);
+  // blur doesn't bubble, so we capture
+  $("#gymList")?.addEventListener("blur", handleGymLog, true);
 
   $("#gymList")?.addEventListener("click", async (e) => {
     const btn = e.target.closest("button");
