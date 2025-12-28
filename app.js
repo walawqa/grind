@@ -1184,15 +1184,12 @@ function renderNotes(){
     const rawBody = String(n.body||"").trim();
     const body = escapeHtml(rawBody);
 
-    // Decide if we should offer collapse/expand.
-    // User problem: many short lines => total chars small, but height huge.
-    const lineCount = rawBody ? rawBody.split(/\r?\n/).length : 0;
-    const shouldCollapse = (lineCount > 4) || (rawBody.length > 220);
+    // local UI state: show/hide note content (NOT persisted)
     const isExpanded = !!state.__notesUi.expanded?.[n.id];
 
     const dt = (n.updatedAt || n.createdAt) ? formatDateTimePL(n.updatedAt || n.createdAt) : "";
     const pinLabel = n.pinned ? "Odepnij" : "Przypnij";
-    const toggleLabel = isExpanded ? "Zwiń" : "Rozwiń";
+    const toggleLabel = isExpanded ? "Ukryj" : "Wyświetl";
 
     return `
       <div class="note-card ${isExpanded ? "is-expanded" : ""}" data-id="${n.id}">
@@ -1201,12 +1198,12 @@ function renderNotes(){
           <div class="note-card__meta">${escapeHtml(dt)}</div>
         </div>
 
-        <div class="note-card__body ${shouldCollapse ? "note-card__body--collapsible" : ""}">
+        <div class="note-card__body">
           ${body || '<span style="opacity:.7;">(pusta notatka)</span>'}
         </div>
 
         <div class="note-card__actions">
-          ${shouldCollapse ? `<button class="small-btn" data-action="noteToggle" data-id="${n.id}">${toggleLabel}</button>` : ""}
+          <button class="small-btn" data-action="noteToggle" data-id="${n.id}">${toggleLabel}</button>
           <button class="small-btn" data-action="notePin" data-id="${n.id}">${pinLabel}</button>
           <button class="small-btn" data-action="noteEdit" data-id="${n.id}">Edytuj</button>
           <button class="small-btn small-btn--danger" data-action="noteDelete" data-id="${n.id}">Usuń</button>
@@ -2936,18 +2933,7 @@ function init() {
       return;
     }
 
-    // 2) Click on title/body toggles expand (only if collapsible)
-    const card = e.target.closest(".note-card");
-    if(!card) return;
-    const id = card.getAttribute("data-id");
-    if(!id) return;
-    const body = card.querySelector(".note-card__body");
-    if(!body || !body.classList.contains("note-card__body--collapsible")) return;
-
-    if(!state.__notesUi) state.__notesUi = { expanded: {} };
-    state.__notesUi.expanded[id] = !state.__notesUi.expanded[id];
-    renderNotes();
-  });
+    });
 
   // notes modal
   $("#btnCloseNotes")?.addEventListener("click", closeNoteModal);
