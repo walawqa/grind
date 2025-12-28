@@ -1119,7 +1119,48 @@ function toggleDaily(id, dateISO) {
   const g = state.data.goals.find(x => x.id === id && x.type === "daily");
   if (!g) return;
   if (!g.dailyLog) g.dailyLog = {};
+
+  // Weekly mode: block further check-ins after weekly quota is reached.
+  if (g.dailyMode === "weekly") {
+    const wk = isoWeekKey(dateISO);
+    const target = Math.max(1, Math.min(7, Math.floor(Number(g.weeklyTimes) || 3)));
+    g.weeklyTimes = target;
+
+    const days = weekDatesFromWeekKey(wk);
+    const doneInWeek = days.reduce((acc, d) => acc + (g.dailyLog?.[d] ? 1 : 0), 0);
+    const alreadyDoneToday = g.dailyLog?.[dateISO] === true;
+
+    // If quota already reached and today isn't checked yet -> do nothing (locked).
+    if (!alreadyDoneToday && doneInWeek >= target) {
+      showToast(`Limit tygodniowy już osiągnięty: ${doneInWeek}/${target}`, 2000);
+      return;
+    }
+  }
+
+  // Toggle for the day
   g.dailyLog[dateISO] = !g.dailyLog[dateISO];
+
+  // Weekly mode: show toast once per week when quota becomes reached.
+  if (g.dailyMode === "weekly") {
+    const wk = isoWeekKey(dateISO);
+    if (!g.weeklyAchieved || typeof g.weeklyAchieved !== "object") g.weeklyAchieved = {};
+    const target = Math.max(1, Math.min(7, Math.floor(Number(g.weeklyTimes) || 3)));
+    g.weeklyTimes = target;
+
+    const days = weekDatesFromWeekKey(wk);
+    const done = days.reduce((acc, d) => acc + (g.dailyLog?.[d] ? 1 : 0), 0);
+
+    // If user unchecks and falls below target, allow achieving again.
+    if (done < target) {
+      delete g.weeklyAchieved[wk];
+    }
+
+    if (done >= target && !g.weeklyAchieved[wk]) {
+      g.weeklyAchieved[wk] = Date.now();
+      showToast(`Udało się osiągnąć tygodniowy cel: ${g.name} (${done}/${target})`, 3000);
+    }
+  }
+
   saveData();
   render();
 }
@@ -1213,10 +1254,20 @@ function renderTodayDaily() {
   box.innerHTML = "";
 
   for (const g of goals) {
-    const done = g.dailyLog?.[state.selectedDate] === true;
-    const countY = getDailyCountInYear(g, yr);
-    const target = getDailyTarget(g);
-    const pctY = getDailyPercentYear(g, yr);
+    const doneToday = g.dailyLog?.[state.selectedDate] === true;
+
+    // Weekly progress (0/3 etc.) + lock after reaching quota
+    let weeklyTxt = "";
+    let locked = false;
+    if (g.dailyMode === "weekly") {
+      const wk = isoWeekKey(state.selectedDate);
+      const target = Math.max(1, Math.min(7, Math.floor(Number(g.weeklyTimes) || 3)));
+      g.weeklyTimes = target;
+      const days = weekDatesFromWeekKey(wk);
+      const doneW = days.reduce((acc, d) => acc + (g.dailyLog?.[d] ? 1 : 0), 0);
+      weeklyTxt = `${doneW}/${target}`;
+      locked = (!doneToday && doneW >= target);
+    }
 
     const row = document.createElement("div");
     row.className = "today-item";
@@ -1227,11 +1278,16 @@ function renderTodayDaily() {
         <div class="today-name" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</div>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <span class="pill" title="Streak">🔥${getDailyCurrentStreak(g, state.selectedDate)}</span>
-        <button class="today-btn ${done ? "today-btn--on" : ""}"
+        ${
+          g.dailyMode === "weekly"
+            ? `<span class="pill" title="Tydzień">${weeklyTxt}</span>`
+            : `<span class="pill" title="Streak">🔥${getDailyCurrentStreak(g, state.selectedDate)}</span>`
+        }
+        <button class="today-btn ${doneToday ? "today-btn--on" : ""}"
+                ${locked ? "disabled" : ""}
                 data-action="toggleDailyToday"
                 data-id="${g.id}">
-          ${done ? "✓ Zrobione" : "Zrób teraz"}
+          ${doneToday ? "✓ Zrobione" : (locked ? "Limit" : "Zrób teraz")}
         </button>
       </div>
     `;
@@ -2108,5 +2164,20 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+
+/* ======= Toast ======= */
+let __toastTimer = null;
+function showToast(message, duration = 3000){
+  const el = document.getElementById("toast");
+  if(!el) return;
+  el.textContent = String(message || "");
+  el.classList.add("toast--show");
+  if(__toastTimer) clearTimeout(__toastTimer);
+  __toastTimer = setTimeout(() => {
+    el.classList.remove("toast--show");
+  }, Math.max(500, Number(duration) || 3000));
+}
+
 
 init();

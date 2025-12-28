@@ -193,6 +193,9 @@
 
     
   </main>
+
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Floating Add button (safe-area aware) -->
   <button class="fab" id="btnAdd" type="button" aria-label="Dodaj">
     <span class="fab__icon">＋</span>
@@ -234,7 +237,21 @@
         <div class="form-row" id="dailyFields">
           <label>Cel roczny dla Daily (liczba dni / razy)</label>
           <input type="number" id="dailyTarget" min="1" step="1" placeholder="Liczba założonych dni w roku" />
-          <small class="hint">
+          
+          <div class="inline" style="margin-top:8px;">
+            <label style="min-width:110px;">Tryb</label>
+            <select id="dailyMode" style="flex:1;">
+              <option value="daily">Daily (1× dziennie)</option>
+              <option value="weekly">Tygodniowo (X dni/tydz.)</option>
+            </select>
+          </div>
+
+          <div class="form-row" id="weeklyFields" style="margin-top:10px; display:none;">
+            <label>Ile dni w tygodniu?</label>
+            <input type="number" id="weeklyTimes" min="1" max="7" step="1" placeholder="np. 3" />
+            <small class="hint">Powiadomienie pojawi się, gdy odhaczysz cel tyle razy w tym tygodniu.</small>
+          </div>
+<small class="hint">
             Przykład: 150. Każde odhaczenie dnia = +1. Procent liczy się automatycznie.
           </small>
         </div>
@@ -248,12 +265,6 @@
           <label>Kolor</label>
           <input type="color" id="goalColor" value="#3b82f6" />
         </div>
-
-        <div class="form-row">
-          <label>Opis (opcjonalnie)</label>
-          <textarea id="goalNote" rows="3" maxlength="240" placeholder="Krótka notatka / zasady celu"></textarea>
-        </div>
-
         <div class="form-actions">
           <button type="button" class="btn btn--ghost" id="btnCancel">Anuluj</button>
           <button type="submit" class="btn" id="btnSave">Zapisz</button>
