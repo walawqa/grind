@@ -15,8 +15,9 @@
       <div class="app-subtitle" id="subtitle">Lokalnie • bez konta</div>
     </div>
     <div class="topbar__right">
-      <button class="btn" id="btnAdd">+ Dodaj cel</button>
+      
       <button class="icon-btn" id="btnSettings" aria-label="Ustawienia wyglądu">⚙</button>
+    
     </div>
   </header>
 
@@ -192,6 +193,12 @@
 
     
   </main>
+  <!-- Floating Add button (safe-area aware) -->
+  <button class="fab" id="btnAdd" type="button" aria-label="Dodaj">
+    <span class="fab__icon">＋</span>
+    <span class="fab__label" id="btnAddLabel">Dodaj</span>
+  </button>
+
 
   <!-- Modal: Add/Edit Goal -->
   <div class="modal" id="modal" aria-hidden="true">

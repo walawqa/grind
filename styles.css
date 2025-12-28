@@ -19,6 +19,14 @@
 
 *{box-sizing:border-box}
 html,body{min-height:100%}
+/* iOS: prevent zoom + keep layout stable */
+html{ -webkit-text-size-adjust: 100%; }
+html, body{ touch-action: manipulation; }
+button, a, input, select, textarea{ touch-action: manipulation; }
+@media (hover: none) and (pointer: coarse){
+  input, select, textarea{ font-size:16px; }
+}
+
 body{
   margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -58,7 +66,7 @@ body::before{
 .topbar{
   position:sticky; top:0; z-index:5;
   display:flex; justify-content:space-between; align-items:center;
-  padding:14px 16px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
   background: rgba(11,18,32,.75);
   backdrop-filter: blur(10px);
   border-bottom:1px solid var(--line);
@@ -71,6 +79,7 @@ body::before{
   max-width:1050px;
   margin:0 auto;
   padding:16px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   display:grid;
   grid-template-columns: 1fr;
   gap:16px;
@@ -131,6 +140,52 @@ input[type="date"]{
   border:1px solid rgba(239,68,68,.35);
   color:#ffd2d2;
 }
+
+/* ===== Floating Add (FAB) ===== */
+.fab{
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 25;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  padding: 14px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+
+  background: linear-gradient(180deg, var(--btn), var(--btn2));
+  color: #fff;
+  box-shadow: 0 22px 60px rgba(0,0,0,.45);
+  cursor: pointer;
+  font-weight: 900;
+  -webkit-tap-highlight-color: transparent;
+}
+.fab:active{ transform: translateY(1px); filter: brightness(0.98); }
+.fab__icon{
+  width: 26px; height: 26px;
+  display:grid; place-items:center;
+  font-size: 22px;
+  line-height: 1;
+}
+.fab__label{
+  font-size: 14px;
+  letter-spacing: .2px;
+}
+
+/* On small screens keep it minimal (circle) */
+@media (max-width: 560px){
+  .fab{
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+  .fab__label{ display:none; }
+}
+
 .file-btn{position:relative; overflow:hidden}
 
 
