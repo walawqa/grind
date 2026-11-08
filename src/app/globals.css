@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+/*
+ * RestoPulse — tokeny projektowe (dark premium).
+ * Wszystkie kolory, promienie, cienie i czasy przejść definiujemy tutaj.
+ */
+:root {
+  /* tło */
+  --bg: #080d19;
+  --bg-elevated: #0b1020;
+  /* karty */
+  --surface: #111827;
+  --surface-2: #121b2d;
+  --surface-3: #18233a;
+  --surface-hover: #172036;
+  --border: #243047;
+  --border-subtle: #1b2538;
+  --border-strong: #2f3d59;
+
+  /* tekst */
+  --text: #e8edf7;
+  --text-muted: #9aa6bd;
+  --text-subtle: #6b7891;
+
+  /* akcenty */
+  --accent: #8b5cf6;
+  --accent-soft: #a78bfa;
+  --accent-bg: rgba(139, 92, 246, 0.12);
+  --accent-ring: rgba(167, 139, 250, 0.45);
+  --cyan: #22d3ee;
+  --positive: #34d399;
+  --positive-bg: rgba(52, 211, 153, 0.12);
+  --negative: #fb7185;
+  --negative-bg: rgba(251, 113, 133, 0.12);
+  --warning: #f5b454;
+  --warning-bg: rgba(245, 180, 84, 0.12);
+
+  /* geometria */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 18px 50px -12px rgba(0, 0, 0, 0.75);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 180ms;
+
+  --sidebar-w: 248px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-cyan: var(--cyan);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* subtelne poświaty tła */
+.app-glow {
+  background:
+    radial-gradient(900px 500px at 12% -10%, rgba(139, 92, 246, 0.1), transparent 60%),
+    radial-gradient(700px 420px at 95% 0%, rgba(34, 211, 238, 0.05), transparent 60%),
+    radial-gradient(800px 600px at 60% 110%, rgba(59, 77, 170, 0.08), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.card {
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #26314a transparent;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-3);
+  border-radius: 8px;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fade-up 260ms var(--ease) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.recharts-wrapper svg:focus,
+.recharts-surface:focus,
+.recharts-sector:focus,
+.recharts-rectangle:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}

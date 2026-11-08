@@ -1,0 +1,12 @@
+﻿Numer zamówienia;Data zamówienia;Status;Wartość zamówienia;Prowizja;Waluta;Uwagi
+T-0001;03.10.2026 12:15;Zrealizowane;54,90;15,37;PLN;DANE TESTOWE - syntetyczne | poprawny
+T-0002;03.10.2026 13:02;Zrealizowane;1 249,00;;PLN;DANE TESTOWE - syntetyczne | poprawny, kwota z separatorem tysięcy, brak prowizji
+T-0002;03.10.2026 13:02;Zrealizowane;1 249,00;;PLN;DANE TESTOWE - syntetyczne | BŁĄD: duplikat ID
+T-0003;31.09.2026 18:40;Zrealizowane;62,00;17,36;PLN;DANE TESTOWE - syntetyczne | BŁĄD: nieistniejąca data
+T-0004;04.10.2026 19:10;Zrealizowane;-35,00;0;PLN;DANE TESTOWE - syntetyczne | BŁĄD: ujemna kwota sprzedaży
+T-0005;04.10.2026 19:45;Zrealizowane;48,50;13,58;EUR;DANE TESTOWE - syntetyczne | BŁĄD: nieobsługiwana waluta
+T-0006;05.10.2026 20:05;Zrealizowane;;;PLN;DANE TESTOWE - syntetyczne | BŁĄD: brak kwoty
+T-0007;05.10.2026 20:30;W drodze;71,20;19,94;PLN;DANE TESTOWE - syntetyczne | BŁĄD: nieznany status
+T-0008;06.10.2026 12:00;Zrealizowane;sześćdziesiąt;;PLN;DANE TESTOWE - syntetyczne | BŁĄD: tekst zamiast liczby
+T-0009;06.10.2026 12:30;Anulowane;39,90;;PLN;DANE TESTOWE - syntetyczne | poprawny, anulowane
+;06.10.2026 13:00;Zrealizowane;44,00;12,32;PLN;DANE TESTOWE - syntetyczne | poprawny, brak ID
